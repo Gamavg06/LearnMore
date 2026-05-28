@@ -9,8 +9,9 @@ let careers = [];
 let activeCareer = "all";
 let activeSemester = "all";
 
-const guidesGrid = document.querySelector("#guidesGrid");
-const careersGrid = document.querySelector("#careersGrid");
+// 🛡️ Selectores corregidos según la estructura real de tu index.html
+const guidesGrid = document.querySelector("#guidesContainer") || document.querySelector("#guidesGrid");
+const careersGrid = document.querySelector("#careersContainer") || document.querySelector("#careersGrid");
 const emptyGuides = document.querySelector("#emptyGuides");
 const semesterFilter = document.querySelector("#semesterFilter");
 const contactCareer = document.querySelector("#contactCareer");
@@ -95,7 +96,11 @@ function renderStats() {
 }
 
 function renderCareers() {
-  if (!careersGrid) return;
+  if (!careersGrid) {
+    console.warn("No se encontró el contenedor de carreras (#careersContainer o #careersGrid) en el HTML.");
+    return;
+  }
+  
   careersGrid.innerHTML = careers.map((career) => `
     <article class="career-card" style="--career-color:${career.color || "#00d4ff"}" data-career="${career.key || career.id}">
       <div class="career-icon">${(career.name || "?").slice(0, 2).toUpperCase()}</div>
@@ -105,14 +110,18 @@ function renderCareers() {
     </article>
   `).join("");
 
-  careersGrid.querySelectorAll(".career-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      activeCareer = card.dataset.career;
-      document.querySelectorAll(".filter-tab").forEach((tab) => tab.classList.remove("active"));
-      renderGuides();
-      document.querySelector("#guias").scrollIntoView({ behavior: "smooth" });
+  // 🛡️ Validación segura para evitar el error de querySelectorAll sobre elementos nulos
+  const cards = careersGrid.querySelectorAll(".career-card");
+  if (cards) {
+    cards.forEach((card) => {
+      card.addEventListener("click", () => {
+        activeCareer = card.dataset.career;
+        document.querySelectorAll(".filter-tab").forEach((tab) => tab.classList.remove("active"));
+        renderGuides();
+        document.querySelector("#guias")?.scrollIntoView({ behavior: "smooth" });
+      });
     });
-  });
+  }
 }
 
 function renderCareerOptions() {
@@ -123,7 +132,7 @@ function renderCareerOptions() {
 
 function renderSemesterOptions() {
   if (!semesterFilter) return;
-  const current = semesterFilter.value || "all"; // 🛡️ Protección contra valores iniciales nulos
+  const current = semesterFilter.value || "all";
   const semesters = [...new Set(guides.map((guide) => Number(guide.sem)).filter(Boolean))].sort((a, b) => a - b);
   semesterFilter.innerHTML = `<option value="all" data-i18n="filters.semester">Todos los semestres</option>${semesters.map((sem) => `<option value="${sem}">Semestre ${sem}</option>`).join("")}`;
   semesterFilter.value = semesters.includes(Number(current)) ? current : "all";
@@ -132,9 +141,11 @@ function renderSemesterOptions() {
 }
 
 function renderGuides() {
-  if (!guidesGrid) return;
+  if (!guidesGrid) {
+    console.warn("No se encontró el contenedor de guías (#guidesContainer o #guidesGrid) en el HTML.");
+    return;
+  }
   
-  // Aseguramos que los filtros tengan valores válidos de cadena para la comparación de filtrado
   const currentCareer = activeCareer || "all";
   const currentSemester = activeSemester || "all";
 
@@ -163,9 +174,12 @@ function renderGuides() {
     emptyGuides.style.display = filtered.length ? "none" : "block";
   }
   
-  guidesGrid.querySelectorAll("[data-guide]").forEach((button) => {
-    button.addEventListener("click", () => openGuide(button.dataset.guide));
-  });
+  const buttons = guidesGrid.querySelectorAll("[data-guide]");
+  if (buttons) {
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => openGuide(button.dataset.guide));
+    });
+  }
 }
 
 function openGuide(id) {
