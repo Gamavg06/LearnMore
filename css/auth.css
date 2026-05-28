@@ -1,0 +1,49 @@
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+}
+
+.auth-panel {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 1rem;
+  padding: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.auth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.auth-panel h1 {
+  margin: 0;
+  font-family: "Syne", sans-serif;
+  font-size: 2.2rem;
+}
+
+.auth-panel form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-panel p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.auth-panel a {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.auth-form-row {
+  margin: 0;
+}

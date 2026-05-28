@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Administrativo | LEARNMORE</title>
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <aside class="admin-sidebar">
+    <a class="logo" href="index.html">LEARNMORE</a>
+    <button class="admin-tab active" data-view="dashboard" type="button">Dashboard</button>
+    <button class="admin-tab" data-view="guides" type="button">Guias</button>
+    <button class="admin-tab" data-view="careers" type="button">Carreras</button>
+    <button class="admin-tab" data-view="messages" type="button">Mensajes</button>
+    <button class="admin-tab" data-view="users" type="button">Usuarios</button>
+    <a class="admin-link" href="index.html">Sitio publico</a>
+    <button class="admin-link" id="logoutBtn" type="button">Cerrar sesion</button>
+  </aside>
+
+  <main class="admin-shell">
+    <header class="admin-topbar">
+      <div>
+        <span class="eyebrow">Panel administrativo</span>
+        <h1 id="viewTitle">Dashboard</h1>
+      </div>
+      <div class="nav-actions">
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="Cambiar tema">T</button>
+        <button class="chip-btn" id="languageToggle" type="button">ES</button>
+      </div>
+    </header>
+
+    <section class="admin-view active" id="dashboardView">
+      <div class="metric-grid" id="metricGrid"></div>
+      <section class="admin-card">
+        <h2>Actividad reciente</h2>
+        <div class="activity-list" id="activityList"></div>
+      </section>
+    </section>
+
+    <section class="admin-view" id="guidesView">
+      <div class="admin-grid">
+        <form class="admin-card editor-form" id="guideForm">
+          <h2>Gestion de guias</h2>
+          <input type="hidden" name="id">
+          <label>Titulo<input name="title" required></label>
+          <label>Descripcion<textarea name="desc" required></textarea></label>
+          <label>Detalle<textarea name="detail" required></textarea></label>
+          <div class="form-row">
+            <label>Carrera<select name="career" id="guideCareer" required></select></label>
+            <label>Semestre<input name="sem" type="number" min="1" max="12" required></label>
+          </div>
+          <label>Temas separados por coma<input name="topics" required></label>
+          <label>URL de PDF o recurso<input name="fileUrl" type="url" placeholder="https://..."></label>
+          <label>Archivo PDF<input name="file" type="file" accept="application/pdf"></label>
+          <div class="form-actions">
+            <button class="submit-btn" type="submit">Guardar guia</button>
+            <button class="btn-secondary" id="clearGuideForm" type="button">Limpiar</button>
+          </div>
+          <p class="form-note" id="guideStatus"></p>
+        </form>
+        <section class="admin-card">
+          <h2>Guias publicadas</h2>
+          <div class="admin-list" id="guideList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="admin-view" id="careersView">
+      <div class="admin-grid">
+        <form class="admin-card editor-form" id="careerForm">
+          <h2>Gestion de carreras</h2>
+          <input type="hidden" name="id">
+          <label>Clave<input name="key" placeholder="ti" required></label>
+          <label>Nombre<input name="name" required></label>
+          <label>Descripcion<textarea name="desc" required></textarea></label>
+          <label>Color<input name="color" type="color" value="#00d4ff"></label>
+          <button class="submit-btn" type="submit">Guardar carrera</button>
+        </form>
+        <section class="admin-card">
+          <h2>Carreras registradas</h2>
+          <div class="admin-list" id="careerList"></div>
+        </section>
+      </div>
+    </section>
+
+    <section class="admin-view" id="messagesView">
+      <section class="admin-card">
+        <h2>Mensajes de contacto</h2>
+        <div class="admin-list" id="messageList"></div>
+      </section>
+    </section>
+
+    <section class="admin-view" id="usersView">
+      <div class="admin-grid">
+        <form class="admin-card editor-form" id="userForm">
+          <h2>Gestion de usuarios</h2>
+          <input type="hidden" name="id">
+          <label>Nombre<input name="name" required></label>
+          <label>Correo<input name="email" type="email" required></label>
+          <label>Rol
+            <select name="role" required>
+              <option value="user">Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </label>
+          <label>Contrasena local<input name="password" type="password" placeholder="Solo para modo local"></label>
+          <div class="form-actions">
+            <button class="submit-btn" type="submit">Guardar usuario</button>
+            <button class="btn-secondary" id="clearUserForm" type="button">Limpiar</button>
+          </div>
+          <p class="form-note" id="userStatus"></p>
+        </form>
+
+        <section class="admin-card">
+          <div class="list-toolbar">
+            <h2>Usuarios registrados</h2>
+            <div class="form-row">
+              <label>Buscar<input id="userSearch" placeholder="Nombre o correo"></label>
+              <label>Rol
+                <select id="userRoleFilter">
+                  <option value="all">Todos</option>
+                  <option value="admin">Administradores</option>
+                  <option value="user">Usuarios</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="admin-list" id="userList"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

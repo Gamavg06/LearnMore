@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LEARNMORE - Sistema de Guias de Aprendizaje</title>
+  
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="logo" href="#inicio">LEARNMORE</a>
+    <button class="icon-btn menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu">Menu</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#inicio" data-i18n="nav.home">Inicio</a></li>
+      <li><a href="#guias" data-i18n="nav.guides">Guias</a></li>
+      <li><a href="#carreras" data-i18n="nav.careers">Carreras</a></li>
+      <li><a href="#contacto" data-i18n="nav.contact">Contacto</a></li>
+      <li><a href="login.html" id="loginNavLink" data-i18n="nav.login">Entrar</a></li>
+      <li><a href="profile.html" id="profileNavLink" data-i18n="nav.profile" hidden>Perfil</a></li>
+      <li><a class="nav-cta" href="admin.html" id="adminNavLink" data-i18n="nav.admin" hidden>Admin</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Cambiar tema">T</button>
+      <button class="chip-btn" id="languageToggle" type="button">ES</button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="hero-inner">
+        <span class="eyebrow" data-i18n="hero.badge">Sistema de Guias de Aprendizaje</span>
+        <h1 data-i18n="hero.title">Aprende mas rapido. Estudia con proposito.</h1>
+        <p data-i18n="hero.copy">LEARNMORE centraliza guias, temarios y recursos academicos para que estudiantes y docentes encuentren material actualizado por carrera y semestre.</p>
+        <div class="hero-actions">
+          <a class="btn-primary" href="#guias" data-i18n="hero.primary">Explorar guias</a>
+          <a class="btn-secondary" href="register.html" id="createAccountBtn" data-i18n="hero.secondary">Crear cuenta</a>
+          <a class="btn-secondary" href="profile.html" id="heroProfileBtn" data-i18n="nav.profile" hidden>Perfil</a>
+        </div>
+        <div class="stats-grid" id="publicStats">
+          <article><strong>0</strong><span data-i18n="stats.guides">Guias</span></article>
+          <article><strong>0</strong><span data-i18n="stats.careers">Carreras</span></article>
+          <article><strong>0</strong><span data-i18n="stats.semesters">Semestres</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="carreras" class="section">
+      <div class="section-header">
+        <span class="eyebrow" data-i18n="careers.badge">Programas academicos</span>
+        <h2 data-i18n="careers.title">Carreras disponibles</h2>
+        <p data-i18n="careers.copy">Filtra el contenido por area academica y encuentra guias organizadas por semestre.</p>
+      </div>
+      <div class="careers-grid" id="careersGrid"></div>
+    </section>
+
+    <section id="guias" class="section section-alt">
+      <div class="section-header">
+        <span class="eyebrow" data-i18n="guides.badge">Material de estudio</span>
+        <h2 data-i18n="guides.title">Guias academicas</h2>
+        <p data-i18n="guides.copy">Contenido dinamico listo para conectarse con Cloud Firestore y Firebase Storage.</p>
+      </div>
+      <div class="filters">
+        <button class="filter-tab active" data-filter="all" data-i18n="filters.all">Todas</button>
+        <select id="semesterFilter" aria-label="Filtrar por semestre">
+          <option value="all" data-i18n="filters.semester">Todos los semestres</option>
+        </select>
+      </div>
+      <div class="guides-grid" id="guidesGrid"></div>
+      <p class="empty-state" id="emptyGuides" data-i18n="guides.empty">No hay guias con esos filtros.</p>
+    </section>
+
+    <section id="contacto" class="section">
+      <div class="section-header">
+        <span class="eyebrow" data-i18n="contact.badge">Soporte academico</span>
+        <h2 data-i18n="contact.title">Contactanos</h2>
+        <p data-i18n="contact.copy">Envia dudas, reportes o propuestas de material. El panel administrativo mostrara estos mensajes.</p>
+      </div>
+      <div class="contact-layout">
+        <aside class="contact-info">
+          <h3 data-i18n="contact.asideTitle">Estamos para ayudarte</h3>
+          <p data-i18n="contact.asideCopy">Incluye tu carrera y semestre para que el equipo pueda responder con mas precision.</p>
+          <span>sgnia@universidad.edu.mx</span>
+          <span>Puebla, Mexico</span>
+        </aside>
+        <form class="contact-form" id="contactForm">
+          <div class="form-row">
+            <label><span data-i18n="form.name">Nombre</span><input name="name" required></label>
+            <label><span data-i18n="form.email">Correo</span><input name="email" type="email" required></label>
+          </div>
+          <div class="form-row">
+            <label><span data-i18n="form.career">Carrera</span><select name="career" id="contactCareer"></select></label>
+            <label><span data-i18n="form.subject">Asunto</span><input name="subject" required></label>
+          </div>
+          <label><span data-i18n="form.message">Mensaje</span><textarea name="message" required></textarea></label>
+          <button class="submit-btn" type="submit" data-i18n="form.send">Enviar mensaje</button>
+          <p class="form-note" id="contactStatus"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <strong class="logo">LEARNMORE</strong>
+    <span data-i18n="footer.copy">Sistema de Guias de Aprendizaje. Plataforma academica administrable.</span>
+  </footer>
+
+  <dialog class="guide-modal" id="guideModal">
+    <button class="modal-close" id="modalClose" type="button" aria-label="Cerrar">x</button>
+    <div id="modalBody"></div>
+  </dialog>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

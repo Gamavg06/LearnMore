@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesion | LEARNMORE</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+  <main class="auth-page">
+    <section class="auth-panel">
+      <div class="auth-header">
+        <a class="logo" href="index.html">LEARNMORE</a>
+        <button class="chip-btn" id="languageToggle" type="button">ES</button>
+      </div>
+      <span class="eyebrow" data-i18n="auth.loginBadge">Acceso seguro</span>
+      <h1 data-i18n="auth.loginTitle">Iniciar sesion</h1>
+      <form id="loginForm">
+        <label><span data-i18n="form.email">Correo</span><input name="email" type="email" autocomplete="email" required></label>
+        <label><span data-i18n="auth.password">Contrasena</span><input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="submit-btn" type="submit" data-i18n="auth.loginButton">Entrar</button>
+      </form>
+      <button class="text-btn" id="resetPassword" type="button" data-i18n="auth.reset">Recuperar contrasena</button>
+      <p><span data-i18n="auth.noAccount">No tienes cuenta?</span> <a href="register.html" data-i18n="auth.registerLink">Registrate</a></p>
+      <p><a href="index.html" data-i18n="auth.backHome">Volver al inicio</a></p>
+      <p class="form-note" id="authStatus"></p>
+    </section>
+  </main>
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>
