@@ -25,7 +25,32 @@ let messages = [];
 let users = [];
 let activity = [];
 
-if (firebaseReady) {
+// ==========================================
+// GUARDIÁN DE SEGURIDAD CORREGIDO
+// ==========================================
+const session = getLocalSession();
+const isAdminLocal = session && (session.role === "admin" || session.email === "admin@sgnia.local");
+
+if (isAdminLocal) {
+  // Si inició sesión mediante el interceptor local de auth.js, le permitimos el acceso continuo
+  console.log("Acceso concedido mediante sesión de Administrador Local.");
+  
+  // Guardamos o actualizamos asíncronamente su estado en la lista para que se renderice en el panel
+  setTimeout(async () => {
+    try {
+      await saveUser({
+        id: session.email,
+        name: session.name || "Administrador",
+        email: session.email,
+        role: "admin",
+      });
+    } catch (e) {
+      console.error("Error al registrar el perfil local de administrador:", e);
+    }
+  }, 100);
+
+} else if (firebaseReady) {
+  // Si no es la cuenta admin por defecto pero Firebase está activo, validamos la sesión en la nube
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       window.location.href = "login.html";
@@ -38,18 +63,12 @@ if (firebaseReady) {
     }
   });
 } else {
-  const session = getLocalSession();
+  // Modo local sin Firebase activo: si no cumple las condiciones mínimas, se expulsa
   if (!session || session.role !== "admin") {
     window.location.href = "login.html";
-  } else {
-    await saveUser({
-      id: session.email,
-      name: session.name || "Administrador",
-      email: session.email,
-      role: "admin",
-    });
   }
 }
+// ==========================================
 
 document.querySelectorAll(".admin-tab").forEach((button) => {
   button.addEventListener("click", () => switchView(button.dataset.view));
