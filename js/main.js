@@ -9,7 +9,7 @@ let careers = [];
 let activeCareer = "all";
 let activeSemester = "all";
 
-// 🛡️ Selectores corregidos según la estructura real de tu index.html
+// Selectores dinámicos compatibles con tu HTML
 const guidesGrid = document.querySelector("#guidesContainer") || document.querySelector("#guidesGrid");
 const careersGrid = document.querySelector("#careersContainer") || document.querySelector("#careersGrid");
 const emptyGuides = document.querySelector("#emptyGuides");
@@ -37,17 +37,19 @@ document.querySelectorAll(".filter-tab").forEach((button) => {
   });
 });
 
-semesterFilter?.addEventListener("change", () => {
-  activeSemester = semesterFilter.value || "all";
-  renderGuides();
-});
+if (semesterFilter) {
+  semesterFilter.addEventListener("change", () => {
+    activeSemester = semesterFilter.value || "all";
+    renderGuides();
+  });
+}
 
-// ESCUCHADOR DE CARRERAS
+// ESCUCHADOR DE CARRERAS (FIREBASE / LOCAL)
 subscribeCareers((items) => {
+  console.log("Carreras recibidas:", items);
   careers = items;
   
   if (firebaseReady && careers.length === 0) {
-    console.log("Detectadas 0 carreras en Firestore. Activando migración...");
     ejecutarMigracionAutomatica();
     return;
   }
@@ -57,12 +59,12 @@ subscribeCareers((items) => {
   renderGuides();
 });
 
-// ESCUCHADOR DE GUÍAS
+// ESCUCHADOR DE GUÍAS (FIREBASE / LOCAL)
 subscribeGuides((items) => {
+  console.log("Guías recibidas:", items);
   guides = items;
   
   if (firebaseReady && guides.length === 0 && careers.length > 0) {
-    console.log("Carreras listas, pero 0 guías en Firestore. Re-verificando migración...");
     ejecutarMigracionAutomatica();
   }
 
@@ -96,32 +98,44 @@ function renderStats() {
 }
 
 function renderCareers() {
-  if (!careersGrid) {
-    console.warn("No se encontró el contenedor de carreras (#careersContainer o #careersGrid) en el HTML.");
-    return;
-  }
+  if (!careersGrid) return;
   
-  careersGrid.innerHTML = careers.map((career) => `
-    <article class="career-card" style="--career-color:${career.color || "#00d4ff"}" data-career="${career.key || career.id}">
-      <div class="career-icon">${(career.name || "?").slice(0, 2).toUpperCase()}</div>
-      <h3>${career.name}</h3>
-      <p>${career.desc || ""}</p>
-      <span class="pill">${countGuides(career.key || career.id)} guias</span>
-    </article>
-  `).join("");
+  // Imprimimos la estructura exacta que tus estilos CSS esperan para las tarjetas de carrera
+  careersGrid.innerHTML = careers.map((career) => {
+    const cid = career.key || career.id;
+    const cColor = career.color || "#00d4ff";
+    const cName = career.name || "";
+    const cDesc = career.desc || "";
+    const shortName = cName.slice(0, 2).toUpperCase();
 
-  // 🛡️ Validación segura para evitar el error de querySelectorAll sobre elementos nulos
-  const cards = careersGrid.querySelectorAll(".career-card");
-  if (cards) {
-    cards.forEach((card) => {
-      card.addEventListener("click", () => {
-        activeCareer = card.dataset.career;
-        document.querySelectorAll(".filter-tab").forEach((tab) => tab.classList.remove("active"));
-        renderGuides();
-        document.querySelector("#guias")?.scrollIntoView({ behavior: "smooth" });
+    return `
+      <article class="career-card" style="border-top: 4px solid ${cColor}; cursor: pointer;" data-career="${cid}">
+        <div class="career-icon" style="background: ${cColor}20; color: ${cColor}; display: inline-block; padding: 10px; border-radius: 50%; font-weight: bold; margin-bottom: 10px;">
+          ${shortName}
+        </div>
+        <h3>${cName}</h3>
+        <p>${cDesc}</p>
+        <span class="pill" style="background: ${cColor}15; color: ${cColor}; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold;">
+          ${countGuides(cid)} guías
+        </span>
+      </article>
+    `;
+  }).join("");
+
+  // Añadimos el evento Click a las tarjetas para que filtren las guías automáticamente
+  careersGrid.querySelectorAll("[data-career]").forEach((card) => {
+    card.addEventListener("click", () => {
+      activeCareer = card.dataset.career;
+      
+      // Sincronizar con los botones de filtro superiores si existen
+      document.querySelectorAll(".filter-tab").forEach((tab) => {
+        tab.classList.toggle("active", tab.dataset.filter === activeCareer);
       });
+      
+      renderGuides();
+      document.querySelector("#guias")?.scrollIntoView({ behavior: "smooth" });
     });
-  }
+  });
 }
 
 function renderCareerOptions() {
@@ -141,10 +155,7 @@ function renderSemesterOptions() {
 }
 
 function renderGuides() {
-  if (!guidesGrid) {
-    console.warn("No se encontró el contenedor de guías (#guidesContainer o #guidesGrid) en el HTML.");
-    return;
-  }
+  if (!guidesGrid) return;
   
   const currentCareer = activeCareer || "all";
   const currentSemester = activeSemester || "all";
@@ -157,15 +168,15 @@ function renderGuides() {
 
   guidesGrid.innerHTML = filtered.map((guide) => `
     <article class="guide-card">
-      <div class="guide-meta">
+      <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
         <span class="pill">${careerName(guide.career)}</span>
         <span class="pill">Sem. ${guide.sem}</span>
       </div>
       <h3>${guide.title}</h3>
       <p>${guide.desc}</p>
-      <div class="guide-actions">
+      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-between; align-items: center; gap: 10px;">
         <span class="pill">${(guide.topics || []).length} temas</span>
-        <button class="btn-secondary" data-guide="${guide.id}" type="button">Ver guia</button>
+        <button class="btn-secondary" data-guide="${guide.id}" type="button">Ver guía</button>
       </div>
     </article>
   `).join("");
@@ -174,12 +185,9 @@ function renderGuides() {
     emptyGuides.style.display = filtered.length ? "none" : "block";
   }
   
-  const buttons = guidesGrid.querySelectorAll("[data-guide]");
-  if (buttons) {
-    buttons.forEach((button) => {
-      button.addEventListener("click", () => openGuide(button.dataset.guide));
-    });
-  }
+  guidesGrid.querySelectorAll("[data-guide]").forEach((button) => {
+    button.addEventListener("click", () => openGuide(button.dataset.guide));
+  });
 }
 
 function openGuide(id) {
@@ -187,11 +195,13 @@ function openGuide(id) {
   if (!guide || !modalBody || !modal) return;
   modalBody.innerHTML = `
     <h2>${guide.title}</h2>
-    <p class="pill">${careerName(guide.career)} - Semestre ${guide.sem}</p>
-    <p>${guide.detail || guide.desc}</p>
+    <p class="pill" style="display: inline-block; margin: 10px 0;">${careerName(guide.career)} - Semestre ${guide.sem}</p>
+    <p style="margin: 15px 0; line-height: 1.6;">${guide.detail || guide.desc}</p>
     <h3>Temario</h3>
-    <div class="filters">${(guide.topics || []).map((topic) => `<span class="pill">${topic}</span>`).join("")}</div>
-    ${guide.fileUrl ? `<p><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">Abrir recurso</a></p>` : ""}
+    <div class="filters" style="display: flex; flex-wrap: wrap; gap: 5px; margin: 15px 0;">
+      ${(guide.topics || []).map((topic) => `<span class="pill">${topic}</span>`).join("")}
+    </div>
+    ${guide.fileUrl ? `<p style="margin-top: 20px;"><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">Abrir recurso</a></p>` : ""}
   `;
   modal.showModal();
 }
@@ -209,7 +219,6 @@ function initSessionUi() {
   const isAdminLocal = session && (session.role === "admin" || session.email === "admin@sgnia.local");
 
   if (isAdminLocal) {
-    console.log("Sesión activa: Administrador Local detectado.");
     updateSessionUi(true, true);
     return;
   }
