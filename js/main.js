@@ -1,7 +1,7 @@
 import { initTheme } from "./theme.js";
 import { initLanguage, applyLanguage } from "./language.js";
 import { firebaseReady, auth, db, doc, getDoc, onAuthStateChanged } from "./firebase.js";
-import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser } from "./guides.js";
+import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession } from "./guides.js";
 
 let guides = [];
 let careers = [];
@@ -43,109 +43,85 @@ semesterFilter?.addEventListener("change", () => {
 subscribeCareers((items) => {
   careers = items;
   renderCareers();
-  renderCareerOptions();
-  renderGuides();
+  renderCareerSelect();
 });
 
 subscribeGuides((items) => {
   guides = items;
-  renderStats();
-  renderSemesterOptions();
   renderGuides();
 });
 
 document.querySelector("#contactForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const form = event.currentTarget;
   const status = document.querySelector("#contactStatus");
-  const data = Object.fromEntries(new FormData(event.currentTarget));
   try {
-    await saveMessage(data);
-    event.currentTarget.reset();
-    status.textContent = "Mensaje enviado correctamente.";
+    await saveMessage(Object.fromEntries(new FormData(form)));
+    form.reset();
+    if (status) status.textContent = "Mensaje enviado correctamente.";
   } catch (error) {
-    status.textContent = error.message;
+    if (status) status.textContent = error.message;
   }
 });
 
-function renderStats() {
-  const semesters = new Set(guides.map((guide) => guide.sem));
-  const values = [guides.length, careers.length, semesters.size];
-  document.querySelectorAll("#publicStats strong").forEach((node, index) => {
-    node.textContent = values[index] || 0;
-  });
-}
-
 function renderCareers() {
+  if (!careersGrid) return;
   careersGrid.innerHTML = careers.map((career) => `
-    <article class="career-card" style="--career-color:${career.color || "#00d4ff"}" data-career="${career.key || career.id}">
-      <div class="career-icon">${(career.name || "?").slice(0, 2).toUpperCase()}</div>
+    <article class="career-card" style="--card-color: ${career.color || "#00d4ff"}">
       <h3>${career.name}</h3>
-      <p>${career.desc || ""}</p>
-      <span class="pill">${countGuides(career.key || career.id)} guias</span>
+      <p>${career.desc}</p>
+      <footer><strong>${countGuides(career.key || career.id)}</strong> guias disponibles</footer>
     </article>
   `).join("");
-
-  careersGrid.querySelectorAll(".career-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      activeCareer = card.dataset.career;
-      document.querySelectorAll(".filter-tab").forEach((tab) => tab.classList.remove("active"));
-      renderGuides();
-      document.querySelector("#guias").scrollIntoView({ behavior: "smooth" });
-    });
-  });
 }
 
-function renderCareerOptions() {
-  const options = careers.map((career) => `<option value="${career.key || career.id}">${career.name}</option>`).join("");
-  contactCareer.innerHTML = `<option value="">General</option>${options}`;
-}
-
-function renderSemesterOptions() {
-  const current = semesterFilter.value;
-  const semesters = [...new Set(guides.map((guide) => Number(guide.sem)).filter(Boolean))].sort((a, b) => a - b);
-  semesterFilter.innerHTML = `<option value="all" data-i18n="filters.semester">Todos los semestres</option>${semesters.map((sem) => `<option value="${sem}">Semestre ${sem}</option>`).join("")}`;
-  semesterFilter.value = semesters.includes(Number(current)) ? current : "all";
-  activeSemester = semesterFilter.value;
-  applyLanguage();
+function renderCareerSelect() {
+  if (!contactCareer) return;
+  contactCareer.innerHTML = careers.map((career) => `
+    <option value="${career.key || career.id}">${career.name}</option>
+  `).join("");
 }
 
 function renderGuides() {
+  if (!guidesGrid) return;
   const filtered = guides.filter((guide) => {
     const matchesCareer = activeCareer === "all" || guide.career === activeCareer;
-    const matchesSemester = activeSemester === "all" || Number(guide.sem) === Number(activeSemester);
+    const matchesSemester = activeSemester === "all" || String(guide.sem) === activeSemester;
     return matchesCareer && matchesSemester;
   });
 
+  if (emptyGuides) emptyGuides.hidden = filtered.length > 0;
+  
   guidesGrid.innerHTML = filtered.map((guide) => `
     <article class="guide-card">
-      <div class="guide-meta">
+      <header>
+        <h3>${guide.title}</h3>
         <span class="pill">${careerName(guide.career)}</span>
-        <span class="pill">Sem. ${guide.sem}</span>
-      </div>
-      <h3>${guide.title}</h3>
+      </header>
       <p>${guide.desc}</p>
-      <div class="guide-actions">
-        <span class="pill">${(guide.topics || []).length} temas</span>
-        <button class="btn-secondary" data-guide="${guide.id}" type="button">Ver guia</button>
-      </div>
+      <footer>
+        <span>Semestre ${guide.sem}</span>
+        <button class="btn-primary small" data-view-guide="${guide.id}" type="button">Ver detalles</button>
+      </footer>
     </article>
   `).join("");
-  emptyGuides.style.display = filtered.length ? "none" : "block";
-  guidesGrid.querySelectorAll("[data-guide]").forEach((button) => {
-    button.addEventListener("click", () => openGuide(button.dataset.guide));
+
+  document.querySelectorAll("[data-view-guide]").forEach((button) => {
+    button.addEventListener("click", () => openModal(button.dataset.viewGuide));
   });
 }
 
-function openGuide(id) {
+function openModal(id) {
   const guide = guides.find((item) => item.id === id);
-  if (!guide) return;
+  if (!guide || !modal || !modalBody) return;
+  
   modalBody.innerHTML = `
     <h2>${guide.title}</h2>
-    <p class="pill">${careerName(guide.career)} - Semestre ${guide.sem}</p>
+    <p class="modal-meta"><strong>Carrera:</strong> ${careerName(guide.career)} | <strong>Semestre:</strong> ${guide.sem}</p>
     <p>${guide.detail || guide.desc}</p>
-    <h3>Temario</h3>
-    <div class="filters">${(guide.topics || []).map((topic) => `<span class="pill">${topic}</span>`).join("")}</div>
-    ${guide.fileUrl ? `<p><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">Abrir recurso</a></p>` : ""}
+    <h3>Temario principal</h3>
+    <div class="topics-grid">${(guide.topics || []).map((t) => `<span>${t}</span>`).join("")}</div>
+    ${guide.fileUrl ? `<p><a class=\"btn-primary\" href=\"${guide.fileUrl}\" target=\"_blank\" rel=\"noopener\">Abrir recurso</a></p>` : ""}
   `;
   modal.showModal();
 }
@@ -158,7 +134,21 @@ function careerName(key) {
   return careers.find((career) => (career.key || career.id) === key)?.name || key;
 }
 
+// ==========================================
+// CONTROL DE INTERFAZ DE SESIÓN CORREGIDO
+// ==========================================
 function initSessionUi() {
+  // 1. Validamos si hay una sesión del Administrador Local en sessionStorage primero
+  const session = getLocalSession();
+  const isAdminLocal = session && (session.role === "admin" || session.email === "admin@sgnia.local");
+
+  if (isAdminLocal) {
+    console.log("Manteniendo interfaz para Administrador Local.");
+    updateSessionUi(true, true); // (Logueado: true, Admin: true)
+    return; // Detiene la validación aquí para que Firebase no lo tumbe
+  }
+
+  // 2. Si no es admin local, procedemos con la validación estándar de Firebase
   if (firebaseReady) {
     onAuthStateChanged(auth, async (user) => {
       const profile = user ? await getFirebaseUserProfile(user) : null;
@@ -167,6 +157,7 @@ function initSessionUi() {
     return;
   }
 
+  // 3. Fallback de usuarios locales tradicionales (sin internet)
   const user = getLocalCurrentUser();
   updateSessionUi(Boolean(user), user?.role === "admin");
 }
