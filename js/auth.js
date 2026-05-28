@@ -9,6 +9,7 @@ import {
 } from "./firebase.js";
 import { saveUser, saveLocalUser, localUsers, addActivity, setLocalSession } from "./guides.js";
 
+// Inicializar configuraciones de interfaz
 initTheme();
 initLanguage();
 
@@ -23,7 +24,7 @@ document.querySelector("#registerForm")?.addEventListener("submit", async (event
   const formData = new FormData(form);
   const data = Object.fromEntries(formData);
   
-  // Limpieza rigurosa de strings para evitar mutaciones de tipo
+  // Limpieza y validación estricta de cadenas de texto para evitar valores corruptos (Error 400)
   const email = String(data.email || "").trim();
   const password = String(data.password || "").trim();
 
@@ -34,15 +35,14 @@ document.querySelector("#registerForm")?.addEventListener("submit", async (event
 
   try {
     if (firebaseReady) {
-      // ⚠️ Forzamos una microtarea para dar tiempo al import dinámico si ocurriese lag en la CDN
+      // Pequeña pausa de seguridad si el entorno local (Herd) responde antes que la CDN de Firebase
       if (typeof createUserWithEmailAndPassword !== "function" || createUserWithEmailAndPassword.name === "unavailable") {
-        // Esperamos un instante corto si la red local (Herd) va más rápido que la CDN
         await new Promise(resolve => setTimeout(resolve, 150));
       }
 
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Construimos el objeto de usuario cuidando de no pasar parámetros vacíos
+      // Estructuramos el objeto evitando pasar campos intermedios como undefined
       await saveUser({
         id: result.user.uid,
         name: String(data.name || "").trim(),
@@ -67,7 +67,7 @@ document.querySelector("#registerForm")?.addEventListener("submit", async (event
 });
 
 // ==========================================
-// INICIO DE SESIÓN (LOGIN)
+// INICIO DE SESIÓN (LOGIN) WITH ADMIN INTERCEPTOR
 // ==========================================
 document.querySelector("#loginForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -82,26 +82,34 @@ document.querySelector("#loginForm")?.addEventListener("submit", async (event) =
     return;
   }
 
+  // 🔥 INTERCEPTOR: Validación del Administrador por defecto antes de consultar a Firebase.
+  // Esto evita el Error 400 si la cuenta de administración aún no se crea en la nube.
+  const adminFallback = email === "admin@sgnia.local" && password === "admin123";
+
+  if (adminFallback) {
+    saveLocalUser({ id: email, name: "Administrador", email, password, role: "admin" });
+    setLocalSession({ email, name: "Administrador", role: "admin" });
+    addActivity({ type: "auth", text: `Inicio de sesion local de administrador: ${email}` });
+    
+    // Redirección inmediata a la vista del panel administrativo
+    window.location.href = "admin.html";
+    return; // Detiene la ejecución aquí para prevenir peticiones POST fallidas
+  }
+
+  // Flujo estándar para el resto de usuarios del sistema
   try {
     let role = "user";
     if (firebaseReady) {
       if (typeof signInWithEmailAndPassword !== "function" || signInWithEmailAndPassword.name === "unavailable") {
         await new Promise(resolve => setTimeout(resolve, 150));
       }
-      
       await signInWithEmailAndPassword(auth, email, password);
     } else {
       const users = localUsers();
       const found = users.find((user) => user.email === email && user.password === password);
-      const adminFallback = email === "admin@sgnia.local" && password === "admin123";
-      
-      if (!found && !adminFallback) throw new Error("Credenciales incorrectas.");
-      role = adminFallback ? "admin" : found.role || "user";
-      
-      if (adminFallback) {
-        saveLocalUser({ id: email, name: "Administrador", email, password, role: "admin" });
-      }
-      setLocalSession({ email, name: found?.name || "Administrador", role });
+      if (!found) throw new Error("Credenciales incorrectas.");
+      role = found.role || "user";
+      setLocalSession({ email, name: found?.name || "Usuario", role });
     }
     
     addActivity({ type: "auth", text: `Inicio de sesion: ${email}` });
@@ -132,13 +140,13 @@ document.querySelector("#resetPassword")?.addEventListener("click", async () => 
 });
 
 // ==========================================
-// TRADUCTOR DE ERRORES DE FIREBASE
+// MANEJO Y TRADUCCIÓN DE ERRORES DE FIREBASE
 // ==========================================
 function readableAuthError(error) {
   const message = error?.message || "Ocurrio un error.";
   if (message.includes("Firebase no esta configurado")) return message;
   
-  // Filtros extendidos para atrapar códigos nativos de la API REST de Google
+  // Atrapa variaciones de códigos devueltos por la API de Google Identity Toolkit
   if (
     message.includes("invalid-credential") || 
     message.includes("INVALID_LOGIN_CREDENTIALS") || 
