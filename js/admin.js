@@ -16,6 +16,7 @@ import {
   deleteUser,
 } from "./guides.js";
 import { ejecutarMigracionAutomatica } from "./migrar.js";
+
 initTheme();
 initLanguage();
 
@@ -106,24 +107,46 @@ subscribeActivity((items) => {
   renderActivity();
 });
 
+// ==========================================
+// FORMULARIO DE GUÍAS (CON PARCHE ANTI-SPLIT)
+// ==========================================
 document.querySelector("#guideForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  const data = Object.fromEntries(new FormData(form));
-  data.file = form.file.files[0] || null;
+  const statusElement = document.querySelector("#guideStatus");
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+  
+  // Asignación segura del archivo adjunto
+  data.file = form.file?.files[0] || null;
+
+  // 🛡️ CONTROL ANTI-ERRORES: Validación estricta del temario antes de aplicar split
+  const topicsRaw = formData.get("topics") || data.topics || "";
+  data.topics = String(topicsRaw)
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  // Forzar conversión del semestre a formato numérico
+  data.sem = Number(data.sem || 1);
+
   try {
+    if (statusElement) statusElement.textContent = "Guardando guía...";
     await saveGuide(data);
     form.reset();
-    form.id.value = "";
-    document.querySelector("#guideStatus").textContent = "Guia guardada correctamente.";
+    if (form.id) form.id.value = "";
+    if (statusElement) statusElement.textContent = "Guia guardada correctamente.";
   } catch (error) {
-    document.querySelector("#guideStatus").textContent = error.message;
+    if (statusElement) statusElement.textContent = `Error: ${error.message}`;
   }
 });
 
 document.querySelector("#clearGuideForm")?.addEventListener("click", () => {
-  document.querySelector("#guideForm").reset();
-  document.querySelector("#guideForm").id.value = "";
+  const form = document.querySelector("#guideForm");
+  if (form) {
+    form.reset();
+    if (form.id) form.id.value = "";
+  }
 });
 
 document.querySelector("#careerForm")?.addEventListener("submit", async (event) => {
@@ -131,25 +154,29 @@ document.querySelector("#careerForm")?.addEventListener("submit", async (event) 
   const form = event.currentTarget;
   await saveCareer(Object.fromEntries(new FormData(form)));
   form.reset();
-  form.color.value = "#00d4ff";
+  if (form.color) form.color.value = "#00d4ff";
 });
 
 document.querySelector("#userForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
+  const statusElement = document.querySelector("#userStatus");
   try {
     await saveUser(Object.fromEntries(new FormData(form)));
     form.reset();
-    form.id.value = "";
-    document.querySelector("#userStatus").textContent = "Usuario guardado correctamente.";
+    if (form.id) form.id.value = "";
+    if (statusElement) statusElement.textContent = "Usuario guardado correctamente.";
   } catch (error) {
-    document.querySelector("#userStatus").textContent = error.message;
+    if (statusElement) statusElement.textContent = `Error: ${error.message}`;
   }
 });
 
 document.querySelector("#clearUserForm")?.addEventListener("click", () => {
-  document.querySelector("#userForm").reset();
-  document.querySelector("#userForm").id.value = "";
+  const form = document.querySelector("#userForm");
+  if (form) {
+    form.reset();
+    if (form.id) form.id.value = "";
+  }
 });
 
 document.querySelector("#userSearch")?.addEventListener("input", renderUsers);
@@ -158,7 +185,8 @@ document.querySelector("#userRoleFilter")?.addEventListener("change", renderUser
 function switchView(view) {
   document.querySelectorAll(".admin-tab").forEach((tab) => tab.classList.toggle("active", tab.dataset.view === view));
   document.querySelectorAll(".admin-view").forEach((panel) => panel.classList.toggle("active", panel.id === `${view}View`));
-  document.querySelector("#viewTitle").textContent = viewLabel(view);
+  const viewTitle = document.querySelector("#viewTitle");
+  if (viewTitle) viewTitle.textContent = viewLabel(view);
 }
 
 function viewLabel(view) {
@@ -166,6 +194,9 @@ function viewLabel(view) {
 }
 
 function renderDashboard() {
+  const metricGrid = document.querySelector("#metricGrid");
+  if (!metricGrid) return;
+
   const semesters = new Set(guides.map((guide) => guide.sem));
   const metrics = [
     ["Guias", guides.length],
@@ -175,26 +206,35 @@ function renderDashboard() {
     ["Usuarios", users.length],
     ["Firebase", firebaseReady ? "Activo" : "Local"],
   ];
-  document.querySelector("#metricGrid").innerHTML = metrics.map(([label, value]) => `
+  metricGrid.innerHTML = metrics.map(([label, value]) => `
     <article class="metric-card"><strong>${value}</strong><span>${label}</span></article>
   `).join("");
 }
 
 function renderActivity() {
+  const activityList = document.querySelector("#activityList");
+  if (!activityList) return;
+
   const list = activity.slice(0, 8);
-  document.querySelector("#activityList").innerHTML = list.length ? list.map((item) => `
+  activityList.innerHTML = list.length ? list.map((item) => `
     <article class="list-item"><strong>${item.text || item.type}</strong><p>${formatDate(item.createdAt)}</p></article>
   `).join("") : `<p class="form-note">Sin actividad reciente.</p>`;
 }
 
 function renderCareerSelect() {
-  document.querySelector("#guideCareer").innerHTML = careers.map((career) => `
+  const guideCareer = document.querySelector("#guideCareer");
+  if (!guideCareer) return;
+
+  guideCareer.innerHTML = careers.map((career) => `
     <option value="${career.key || career.id}">${career.name}</option>
   `).join("");
 }
 
 function renderGuides() {
-  document.querySelector("#guideList").innerHTML = guides.map((guide) => `
+  const guideList = document.querySelector("#guideList");
+  if (!guideList) return;
+
+  guideList.innerHTML = guides.map((guide) => `
     <article class="list-item">
       <header><strong>${guide.title}</strong><span class="pill">Sem. ${guide.sem}</span></header>
       <p>${guide.desc}</p>
@@ -210,20 +250,26 @@ function renderGuides() {
 
 function fillGuide(id) {
   const guide = guides.find((item) => item.id === id);
+  if (!guide) return;
   const form = document.querySelector("#guideForm");
+  if (!form) return;
+
   form.id.value = guide.id;
-  form.title.value = guide.title || "";
-  form.desc.value = guide.desc || "";
-  form.detail.value = guide.detail || "";
-  form.career.value = guide.career || "";
-  form.sem.value = guide.sem || "";
-  form.topics.value = (guide.topics || []).join(", ");
-  form.fileUrl.value = guide.fileUrl || "";
+  if (form.title) form.title.value = guide.title || "";
+  if (form.desc) form.desc.value = guide.desc || "";
+  if (form.detail) form.detail.value = guide.detail || "";
+  if (form.career) form.career.value = guide.career || "";
+  if (form.sem) form.sem.value = guide.sem || "";
+  if (form.topics) form.topics.value = (guide.topics || []).join(", ");
+  if (form.fileUrl) form.fileUrl.value = guide.fileUrl || "";
   switchView("guides");
 }
 
 function renderCareers() {
-  document.querySelector("#careerList").innerHTML = careers.map((career) => `
+  const careerList = document.querySelector("#careerList");
+  if (!careerList) return;
+
+  careerList.innerHTML = careers.map((career) => `
     <article class="list-item">
       <header><strong>${career.name}</strong><span class="pill">${career.key || career.id}</span></header>
       <p>${career.desc}</p>
@@ -239,16 +285,22 @@ function renderCareers() {
 
 function fillCareer(id) {
   const career = careers.find((item) => item.id === id);
+  if (!career) return;
   const form = document.querySelector("#careerForm");
+  if (!form) return;
+
   form.id.value = career.id;
-  form.key.value = career.key || career.id;
-  form.name.value = career.name || "";
-  form.desc.value = career.desc || "";
-  form.color.value = career.color || "#00d4ff";
+  if (form.key) form.key.value = career.key || career.id;
+  if (form.name) form.name.value = career.name || "";
+  if (form.desc) form.desc.value = career.desc || "";
+  if (form.color) form.color.value = career.color || "#00d4ff";
 }
 
 function renderMessages() {
-  document.querySelector("#messageList").innerHTML = messages.map((message) => `
+  const messageList = document.querySelector("#messageList");
+  if (!messageList) return;
+
+  messageList.innerHTML = messages.map((message) => `
     <article class="list-item">
       <header><strong>${message.subject || "Mensaje"}</strong><span class="pill">${message.status || "nuevo"}</span></header>
       <p>${message.name} - ${message.email}</p>
@@ -264,6 +316,9 @@ function renderMessages() {
 }
 
 function renderUsers() {
+  const userList = document.querySelector("#userList");
+  if (!userList) return;
+
   const search = document.querySelector("#userSearch")?.value.trim().toLowerCase() || "";
   const roleFilter = document.querySelector("#userRoleFilter")?.value || "all";
   const filtered = users.filter((user) => {
@@ -274,7 +329,7 @@ function renderUsers() {
     return matchesSearch && matchesRole;
   });
 
-  document.querySelector("#userList").innerHTML = filtered.length ? filtered.map((user) => `
+  userList.innerHTML = filtered.length ? filtered.map((user) => `
     <article class="list-item">
       <header><strong>${user.name || user.email}</strong><span class="pill">${user.role || "user"}</span></header>
       <p>${user.email}</p>
@@ -303,11 +358,13 @@ function fillUser(id) {
   const user = users.find((item) => item.id === id);
   if (!user) return;
   const form = document.querySelector("#userForm");
+  if (!form) return;
+
   form.id.value = user.id;
-  form.name.value = user.name || "";
-  form.email.value = user.email || "";
-  form.role.value = user.role || "user";
-  form.password.value = user.password || "";
+  if (form.name) form.name.value = user.name || "";
+  if (form.email) form.email.value = user.email || "";
+  if (form.role) form.role.value = user.role || "user";
+  if (form.password) form.password.value = user.password || "";
   switchView("users");
 }
 
