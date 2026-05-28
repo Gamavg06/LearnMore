@@ -149,23 +149,41 @@ function localDelete(key, id) {
   write(key, read(key, []).filter((item) => item.id !== id));
 }
 
+// ==========================================
+// CONTROL DE GUARDADO DE GUÍAS ROBUSTO
+// ==========================================
 export async function saveGuide(data) {
-  const payload = { ...data, sem: Number(data.sem), topics: normalizeTopics(data.topics) };
+  // Normalización segura de tipos y arrays
+  const payload = { 
+    ...data, 
+    sem: Number(data.sem || 1), 
+    topics: normalizeTopics(data.topics) 
+  };
+
   if (!firebaseReady) {
     const id = localUpsert(KEYS.guides, payload);
     addActivity({ type: "guide", text: `Guia guardada: ${payload.title}` });
     return id;
   }
-  if (payload.file) {
+
+  // Subida a Firebase Storage con control nativo
+  if (payload.file && payload.file instanceof File) {
     const path = `guides/${Date.now()}-${payload.file.name}`;
     const uploaded = await uploadBytes(ref(storage, path), payload.file);
     payload.fileUrl = await getDownloadURL(uploaded.ref);
   }
+  
+  // Limpiar propiedades temporales del formulario antes de subir a Firestore
   delete payload.file;
   const id = payload.id;
   delete payload.id;
-  if (id) await setDoc(doc(db, "guides", id), { ...payload, updatedAt: serverTimestamp() }, { merge: true });
-  else await addDoc(collection(db, "guides"), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+
+  if (id) {
+    await setDoc(doc(db, "guides", id), { ...payload, updatedAt: serverTimestamp() }, { merge: true });
+  } else {
+    await addDoc(collection(db, "guides"), { ...payload, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  }
+  
   await addDoc(collection(db, "activity"), { type: "guide", text: `Guia guardada: ${payload.title}`, createdAt: serverTimestamp() });
 }
 
@@ -175,7 +193,7 @@ export async function deleteGuide(id) {
 }
 
 export async function saveCareer(data) {
-  const payload = { ...data, key: data.key.trim().toLowerCase() };
+  const payload = { ...data, key: String(data.key || "").trim().toLowerCase() };
   if (!firebaseReady) return localUpsert(KEYS.careers, { ...payload, id: payload.id || payload.key });
   const id = payload.id || payload.key;
   delete payload.id;
