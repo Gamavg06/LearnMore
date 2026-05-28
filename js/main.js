@@ -2,6 +2,7 @@ import { initTheme } from "./theme.js";
 import { initLanguage, applyLanguage } from "./language.js";
 import { firebaseReady, auth, db, doc, getDoc, onAuthStateChanged } from "./firebase.js";
 import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession } from "./guides.js";
+import { ejecutarMigracionAutomatica } from "./migrar.js"; // 👈 Importamos el migrador definitivo
 
 let guides = [];
 let careers = [];
@@ -18,7 +19,7 @@ const modalBody = document.querySelector("#modalBody");
 
 initTheme();
 initLanguage();
-initSessionUi(); // 👈 Inicializa la validación inteligente de sesión
+initSessionUi();
 
 document.querySelector("#menuToggle")?.addEventListener("click", () => {
   document.querySelector("#navLinks")?.classList.toggle("open");
@@ -40,15 +41,32 @@ semesterFilter?.addEventListener("change", () => {
   renderGuides();
 });
 
+// ESCUCHADOR DE CARRERAS
 subscribeCareers((items) => {
   careers = items;
+  
+  // 🔥 VERIFICACIÓN INTELIGENTE: Si Firebase está activo pero la nube no tiene datos, migra en caliente
+  if (firebaseReady && careers.length === 0) {
+    console.log("Detectadas 0 carreras en Firestore. Activando migración...");
+    ejecutarMigracionAutomatica();
+    return;
+  }
+
   renderCareers();
   renderCareerOptions();
   renderGuides();
 });
 
+// ESCUCHADOR DE GUÍAS
 subscribeGuides((items) => {
   guides = items;
+  
+  // 🔥 Si las carreras ya se migraron pero las guías aún no impactan, esperamos el segundo ciclo
+  if (firebaseReady && guides.length === 0 && careers.length > 0) {
+    console.log("Carreras listas, pero 0 guías en Firestore. Re-verificando migración...");
+    ejecutarMigracionAutomatica();
+  }
+
   renderStats();
   renderSemesterOptions();
   renderGuides();
@@ -61,16 +79,19 @@ document.querySelector("#contactForm")?.addEventListener("submit", async (event)
   try {
     await saveMessage(data);
     event.currentTarget.reset();
-    status.textContent = "Mensaje enviado correctamente.";
+    if (status) status.textContent = "Mensaje enviado correctamente.";
   } catch (error) {
-    status.textContent = error.message;
+    if (status) status.textContent = error.message;
   }
 });
 
 function renderStats() {
+  const publicStats = document.querySelectorAll("#publicStats strong");
+  if (!publicStats || publicStats.length === 0) return;
+  
   const semesters = new Set(guides.map((guide) => guide.sem));
   const values = [guides.length, careers.length, semesters.size];
-  document.querySelectorAll("#publicStats strong").forEach((node, index) => {
+  publicStats.forEach((node, index) => {
     node.textContent = values[index] || 0;
   });
 }
@@ -109,11 +130,12 @@ function renderSemesterOptions() {
   semesterFilter.innerHTML = `<option value="all" data-i18n="filters.semester">Todos los semestres</option>${semesters.map((sem) => `<option value="${sem}">Semestre ${sem}</option>`).join("")}`;
   semesterFilter.value = semesters.includes(Number(current)) ? current : "all";
   activeSemester = semesterFilter.value;
-  applyLanguage();
+  if (typeof applyLanguage === "function") applyLanguage();
 }
 
 function renderGuides() {
   if (!guidesGrid) return;
+  
   const filtered = guides.filter((guide) => {
     const matchesCareer = activeCareer === "all" || guide.career === activeCareer;
     const matchesSemester = activeSemester === "all" || Number(guide.sem) === Number(activeSemester);
@@ -166,21 +188,16 @@ function careerName(key) {
   return careers.find((career) => (career.key || career.id) === key)?.name || key;
 }
 
-// ==========================================
-// CONTROL DE INTERFAZ DE SESIÓN OPTIMIZADO
-// ==========================================
 function initSessionUi() {
-  // 1. Comprobación prioritaria del Administrador Local en sessionStorage
   const session = getLocalSession();
   const isAdminLocal = session && (session.role === "admin" || session.email === "admin@sgnia.local");
 
   if (isAdminLocal) {
     console.log("Sesión activa: Administrador Local detectado.");
-    updateSessionUi(true, true); // Forzamos (Logueado = true, Admin = true)
-    return; // Detener flujo para evitar que la respuesta vacía de Firebase asíncrono lo sobreescriba
+    updateSessionUi(true, true);
+    return;
   }
 
-  // 2. Si no es admin local, dejamos que proceda con Firebase en la nube
   if (firebaseReady) {
     onAuthStateChanged(auth, async (user) => {
       const profile = user ? await getFirebaseUserProfile(user) : null;
@@ -189,7 +206,6 @@ function initSessionUi() {
     return;
   }
 
-  // 3. Fallback en caso de que todo falle y opere offline
   const user = getLocalCurrentUser();
   updateSessionUi(Boolean(user), user?.role === "admin");
 }
