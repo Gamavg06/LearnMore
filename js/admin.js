@@ -15,7 +15,7 @@ import {
   saveUser,
   deleteUser,
 } from "./guides.js";
-
+import { ejecutarMigracionAutomatica } from "./migrar.js";
 initTheme();
 initLanguage();
 
