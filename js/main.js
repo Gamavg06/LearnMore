@@ -2,7 +2,7 @@ import { initTheme } from "./theme.js";
 import { initLanguage, applyLanguage } from "./language.js";
 import { firebaseReady, auth, db, doc, getDoc, onAuthStateChanged } from "./firebase.js";
 import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession } from "./guides.js";
-import { ejecutarMigracionAutomatica } from "./migrar.js"; // 👈 Importamos el migrador definitivo
+import { ejecutarMigracionAutomatica } from "./migrar.js";
 
 let guides = [];
 let careers = [];
@@ -37,7 +37,7 @@ document.querySelectorAll(".filter-tab").forEach((button) => {
 });
 
 semesterFilter?.addEventListener("change", () => {
-  activeSemester = semesterFilter.value;
+  activeSemester = semesterFilter.value || "all";
   renderGuides();
 });
 
@@ -45,7 +45,6 @@ semesterFilter?.addEventListener("change", () => {
 subscribeCareers((items) => {
   careers = items;
   
-  // 🔥 VERIFICACIÓN INTELIGENTE: Si Firebase está activo pero la nube no tiene datos, migra en caliente
   if (firebaseReady && careers.length === 0) {
     console.log("Detectadas 0 carreras en Firestore. Activando migración...");
     ejecutarMigracionAutomatica();
@@ -61,7 +60,6 @@ subscribeCareers((items) => {
 subscribeGuides((items) => {
   guides = items;
   
-  // 🔥 Si las carreras ya se migraron pero las guías aún no impactan, esperamos el segundo ciclo
   if (firebaseReady && guides.length === 0 && careers.length > 0) {
     console.log("Carreras listas, pero 0 guías en Firestore. Re-verificando migración...");
     ejecutarMigracionAutomatica();
@@ -125,20 +123,24 @@ function renderCareerOptions() {
 
 function renderSemesterOptions() {
   if (!semesterFilter) return;
-  const current = semesterFilter.value;
+  const current = semesterFilter.value || "all"; // 🛡️ Protección contra valores iniciales nulos
   const semesters = [...new Set(guides.map((guide) => Number(guide.sem)).filter(Boolean))].sort((a, b) => a - b);
   semesterFilter.innerHTML = `<option value="all" data-i18n="filters.semester">Todos los semestres</option>${semesters.map((sem) => `<option value="${sem}">Semestre ${sem}</option>`).join("")}`;
   semesterFilter.value = semesters.includes(Number(current)) ? current : "all";
-  activeSemester = semesterFilter.value;
+  activeSemester = semesterFilter.value || "all";
   if (typeof applyLanguage === "function") applyLanguage();
 }
 
 function renderGuides() {
   if (!guidesGrid) return;
   
+  // Aseguramos que los filtros tengan valores válidos de cadena para la comparación de filtrado
+  const currentCareer = activeCareer || "all";
+  const currentSemester = activeSemester || "all";
+
   const filtered = guides.filter((guide) => {
-    const matchesCareer = activeCareer === "all" || guide.career === activeCareer;
-    const matchesSemester = activeSemester === "all" || Number(guide.sem) === Number(activeSemester);
+    const matchesCareer = currentCareer === "all" || guide.career === currentCareer;
+    const matchesSemester = currentSemester === "all" || String(guide.sem) === String(currentSemester);
     return matchesCareer && matchesSemester;
   });
 
