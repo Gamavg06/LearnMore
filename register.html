@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro | LEARNMORE</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+  <main class="auth-page">
+    <section class="auth-panel">
+      <div class="auth-header">
+        <a class="logo" href="index.html">LEARNMORE</a>
+        <button class="chip-btn" id="languageToggle" type="button">ES</button>
+      </div>
+      <span class="eyebrow" data-i18n="auth.registerBadge">Nueva cuenta</span>
+      <h1 data-i18n="auth.registerTitle">Crear cuenta</h1>
+      <form id="registerForm">
+        <label><span data-i18n="form.name">Nombre</span><input name="name" autocomplete="name" required></label>
+        <label>
+          <span data-i18n="form.career">Carrera</span>
+          <select name="career" required>
+            <option value="01">Mecatronica</option>
+            <option value="02">TI e Innovacion Digital</option>
+            <option value="03">Procesos Industriales</option>
+          </select>
+        </label>
+        <label><span data-i18n="profile.phone">Telefono</span><input name="phone" type="tel" data-i18n-placeholder="profile.phonePlaceholder" autocomplete="tel" placeholder="222 000 0000" required></label>
+        <div class="form-row auth-form-row">
+           <label><span data-i18n="profile.studentId">Matricula</span><input name="studentId" placeholder="23-01-010" required></label>
+           <label><span data-i18n="profile.cuatrimestre">Cuatrimestre</span><input name="semester" type="number" min="0" max="20" readonly></label>
+         </div>
+        <label><span data-i18n="form.email">Correo</span><input name="email" type="email" autocomplete="email" required></label>
+        <label><span data-i18n="auth.password">Contrasena</span><input name="password" type="password" autocomplete="new-password" minlength="6" required></label>
+        <button class="submit-btn" type="submit" data-i18n="auth.registerButton">Registrarme</button>
+      </form>
+      <p><span data-i18n="auth.hasAccount">Ya tienes cuenta?</span> <a href="login.html" data-i18n="auth.loginLink">Inicia sesion</a></p>
+      <p><a href="index.html" data-i18n="auth.backHome">Volver al inicio</a></p>
+      <p class="form-note" id="authStatus"></p>
+    </section>
+  </main>
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>

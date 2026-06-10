@@ -1,0 +1,718 @@
+// js/guides.js — solo importar supabase, nada más
+import { supabase } from './supabase.js';
+
+// También necesitas esta variable que uses en el código pero no está definida localmente:
+const supabaseReady = !!supabase;
+// Si Supabase no está listo, usaremos localStorage como respaldo
+// (Manteniendo la misma lógica que antes para el modo local)
+
+const KEYS = {
+  guides: "learnmore.guides",
+  careers: "learnmore.careers",
+  messages: "learnmore.messages",
+  users: "learnmore.users",
+  activity: "learnmore.activity",
+};
+
+// Default data for local storage seeding
+const defaultCareers = [
+  {
+    id: "mecatronica",
+    key: "01",
+    name: "Mecatrónica",
+    desc: "Carrera de Mecatrónica",
+    color: "#00d4ff"
+  },
+  {
+    id: "ti",
+    key: "02",
+    name: "TI e Innovación Digital",
+    desc: "Carrera de Tecnologías de la Información e Innovación Digital",
+    color: "#7c3aed"
+  },
+  {
+    id: "procesos",
+    key: "03",
+    name: "Procesos Industriales",
+    desc: "Carrera de Procesos Industriales",
+    color: "#10b981"
+  }
+];
+
+const defaultGuides = [];
+
+// Funciones para modo local (idénticas a las originales)
+function readLocal(key, fallback) {
+  const value = localStorage.getItem(key);
+  if (!value) return fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function writeLocal(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
+  window.dispatchEvent(new CustomEvent("learnmore:local-change", { detail: { key } }));
+}
+
+export function ensureLocalSeed() {
+  if (!localStorage.getItem(KEYS.careers)) writeLocal(KEYS.careers, defaultCareers);
+  if (!localStorage.getItem(KEYS.guides)) writeLocal(KEYS.guides, defaultGuides);
+  if (!localStorage.getItem(KEYS.messages)) writeLocal(KEYS.messages, []);
+  if (!localStorage.getItem(KEYS.users)) writeLocal(KEYS.users, []);
+  if (!localStorage.getItem(KEYS.activity)) writeLocal(KEYS.activity, []);
+}
+
+function localSubscribe(key, fallback, callback) {
+  ensureLocalSeed();
+  callback(readLocal(key, fallback));
+  const handler = (event) => {
+    if (!event.detail || event.detail.key === key) callback(readLocal(key, fallback));
+  };
+window.addEventListener("learnmore:local-change", handler);
+   window.addEventListener("storage", handler);
+   return () => {
+     window.removeEventListener("learnmore:local-change", handler);
+     window.removeEventListener("storage", handler);
+   };
+}
+
+// Funciones para modo Supabase
+async function subscribeSupabaseTable(tableName, fallback, callback) {
+  if (!supabaseReady) {
+    return localSubscribe(KEYS[tableName], fallback, callback);
+  }
+  
+  // Primero, obtener los datos actuales
+  const { data: initialData, error } = await supabase
+    .from(tableName)
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (error) {
+    console.error(`Error fetching ${tableName}:`, error);
+    // Fallback to local storage on error
+    return localSubscribe(KEYS[tableName], fallback, callback);
+  }
+  
+  // Llamar al callback con los datos iniciales
+  callback(initialData || []);
+  
+  // Configurar suscripción en tiempo real
+  const channel = supabase
+    .channel(`public:${tableName}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, (payload) => {
+      // Volver a fetch todos los datos cuando haya un cambio
+      supabase
+        .from(tableName)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error) {
+            callback(data || []);
+          } else {
+            console.error(`Error in real-time update for ${tableName}:`, error);
+          }
+        });
+    })
+    .subscribe();
+  
+  // Devolver una función para cancelar la suscripción
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+function localUpsert(key, data) {
+  const list = readLocal(key, []);
+  const id = data.id || `${Date.now()}`;
+  const next = [{ ...data, id, updatedAt: new Date().toISOString() }, ...list.filter((item) => item.id !== id)];
+  writeLocal(key, next);
+  return id;
+}
+
+function localDelete(key, id) {
+  writeLocal(key, readLocal(key, []).filter((item) => item.id !== id));
+}
+
+// ==========================================
+// FUNCIÓN DE NORMALIZACIÓN
+// ==========================================
+export function normalizeTopics(value) {
+  if (Array.isArray(value)) return value;
+  return String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
+}
+
+// ==========================================
+// FUNCCIONES DE SUPABASE PARA COLECCIONES
+// ==========================================
+
+// Nota: Para que esto funcione, necesitas crear las tablas correspondientes en Supabase:
+// - guides (id, title, desc, detail, career, sem, topics, fileUrl, created_at, updated_at)
+// - careers (id, key, name, desc, color)
+// - messages (id, name, email, career, subject, message, status, created_at, updated_at)
+// - users (id, name, email, role, password, created_at, updated_at)
+// - activity (id, type, text, created_at, updated_at)
+
+// Función genérica para obtener una referencia a una tabla (similar a collection en Firestore)
+export function collection(tableName) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  return supabase.from(tableName);
+}
+
+// Función genérica para obtener una referencia a un documento (similar a doc en Firestore)
+export function doc(tableName, id) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  return supabase.from(tableName).eq('id', id);
+}
+
+// Función para agregar un documento (similar a addDoc en Firestore)
+export async function addDoc(tableReference, data) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  
+  // Extraer el nombre de la tabla de la referencia (esto es una simplificación)
+  // En una implementación más robusta, pasaríamos el nombre de la tabla directamente
+  const tableName = tableReference; // Asumiendo que tableReference es el nombre de la tabla
+  
+  const { data: result, error } = await supabase
+    .from(tableName)
+    .insert({ 
+      ...data, 
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return result;
+}
+
+// Función para establecer un documento (similar a setDoc en Firestore)
+export async function setDoc(docReference, data, options = {}) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  
+  // Extraer tabla y ID de la referencia (simplificación)
+  // En una implementación más robusta, pasaríamos estos valores directamente
+  const tableName = docReference; // Asumiendo que necesitamos extraer esto de manera diferente
+  const id = docReference.split('/').pop(); // Esto no funcionará como esperamos
+  
+  // En lugar de intentar parsear la referencia, cambiemos el enfoque:
+  // Vamos a crear funciones específicas para cada operación en lugar de genéricas
+  
+  // Por ahora, lanzaremos un error indicando que necesitamos una implementación mejor
+  throw new Error("setDoc no implementado correctamente para Supabase. Use funciones específicas.");
+}
+
+// Función para eliminar un documento (similar a deleteDoc en Firestore)
+export async function deleteDoc(docReference) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  throw new Error("deleteDoc no implementado correctamente para Supabase. Use funciones específicas.");
+}
+
+// Función para obtener un documento (similar a getDoc en Firestore)
+export async function getDoc(docReference) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  throw new Error("getDoc no implementado correctamente para Supabase. Use funciones específicas.");
+}
+
+// Función para suscribirse a cambios en tiempo real (similar a onSnapshot en Firestore)
+// Esta es más compleja de implementar genéricamente, así que vamos a crear suscripciones específicas
+export function onSnapshot(tableReference, callback) {
+  if (!supabaseReady) {
+    // En modo local, usar el mecanismo existente
+    // Pero esto es complicado porque onSnapshot espera una función de desconexión
+    const unsubscribe = localSubscribe("temp", [], callback);
+    return unsubscribe;
+  }
+  
+  // Para Supabase, usamos el mecanismo de suscripción en tiempo real
+  // Pero necesitamos saber el nombre de la tabla
+  // Esta implementación es simplificada y probablemente necesite ajustes
+  return subscribeSupabaseTable("temp", [], callback);
+}
+
+// Función para timestamp del servidor
+export function serverTimestamp() {
+  return new Date();
+}
+
+// Funciones de Storage (simplificadas)
+export function ref(storageInstance, path) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  return { storage: storageInstance, path: path };
+}
+
+export async function uploadBytes(ref, file) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  const { data, error } = await supabase.storage
+    .from(ref.path.split('/')[0]) // Asumiendo formato "bucket/path"
+    .upload(ref.path, file);
+  if (error) throw error;
+  return data;
+}
+
+export async function getDownloadURL(ref) {
+  if (!supabaseReady) throw new Error("Supabase no está listo");
+  const { data, error } = await supabase.storage
+    .from(ref.path.split('/')[0])
+    .getPublicUrl(ref.path);
+  if (error) throw error;
+  return data.publicUrl;
+}
+
+// ==========================================
+// FUNCCIONES ESPECÍFICAS PARA CADA COLECCIÓN
+// ==========================================
+
+export const subscribeGuides = (callback) => subscribeSupabaseTable("guides", defaultGuides, callback);
+export const subscribeCareers = (callback) => subscribeSupabaseTable("careers", defaultCareers, callback);
+export const subscribeMessages = (callback) => subscribeSupabaseTable("messages", [], callback);
+export const subscribeGmailMessages = (callback) => subscribeSupabaseTable("gmailMessages", [], callback);
+export const subscribeUsers = (callback) => subscribeSupabaseTable("users", [], callback);
+export const subscribeActivity = (callback) => subscribeSupabaseTable("activity", [], callback);
+
+// Funciones de guardado específicas
+export async function saveGuide(data) {
+  // Normalización segura de tipos y arrays
+  const payload = { 
+    ...data, 
+    sem: Number(data.sem || 1), 
+    topics: normalizeTopics(data.topics) 
+  };
+
+  if (!supabaseReady) {
+    const id = localUpsert(KEYS.guides, payload);
+    addActivity({ type: "guide", text: `Guia guardada: ${payload.title}` });
+    return id;
+  }
+
+  // Subida a Supabase Storage con control nativo
+  if (payload.file && payload.file instanceof File) {
+    const path = `guides/${Date.now()}-${payload.file.name}`;
+    const uploaded = await uploadBytes(ref(supabase.storage, path), payload.file);
+    payload.fileUrl = await getDownloadURL(uploaded.ref);
+  }
+   
+  // Limpiar propiedades temporales del formulario antes de subir a Supabase
+  delete payload.file;
+  const id = payload.id;
+  delete payload.id;
+
+  // Agregar timestamps
+  const timestamp = new Date().toISOString();
+  const dataToSave = { 
+    ...payload, 
+    updated_at: timestamp,
+    ...(id ? {} : { created_at: timestamp }) // Solo agregar created_at si es un nuevo registro
+  };
+
+  try {
+    if (id) {
+      // Actualizar registro existente
+      const { error } = await supabase
+        .from("guides")
+        .update(dataToSave)
+        .eq("id", id);
+      
+      if (error) throw error;
+    } else {
+      // Insertar nuevo registro
+      const { data: result, error } = await supabase
+        .from("guides")
+        .insert({ ...dataToSave })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      // El ID lo genera la base de datos, pero en nuestro caso estamos proporcionando uno
+      // Si la base de datos genera el ID, necesitamos obtenerlo del resultado
+    }
+    
+    // Registrar actividad
+    await saveActivity({ type: "guide", text: `Guia guardada: ${payload.title || "(Sin título)"}` });
+    
+    return id || Date.now(); // Devolver el ID
+  } catch (error) {
+    console.error("Error saving guide:", error);
+    throw error;
+  }
+}
+
+export async function saveCareer(data) {
+  const payload = { ...data, key: String(data.key || "").trim().toLowerCase() };
+  
+  if (!supabaseReady) {
+    return localUpsert(KEYS.careers, { ...payload, id: payload.id || payload.key });
+  }
+  
+  const id = payload.id || payload.key;
+  delete payload.id;
+  
+  const timestamp = new Date().toISOString();
+  const dataToSave = { 
+    ...payload, 
+    updated_at: timestamp,
+    ...(id ? {} : { created_at: timestamp })
+  };
+
+  try {
+    if (id) {
+      const { error } = await supabase
+        .from("careers")
+        .update(dataToSave)
+        .eq("id", id);
+      
+      if (error) throw error;
+    } else {
+      const { data: result, error } = await supabase
+        .from("careers")
+        .insert(dataToSave)
+        .select()
+        .single();
+      
+      if (error) throw error;
+    }
+    
+    return id;
+  } catch (error) {
+    console.error("Error saving career:", error);
+    throw error;
+  }
+}
+
+export async function saveMessage(data) {
+  const payload = { ...data, status: "nuevo", created_at: new Date().toISOString() };
+
+  if (!supabaseReady) {
+    return localUpsert(KEYS.messages, payload);
+  }
+
+  try {
+    const { data: result, error } = await supabase
+      .from("messages")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Disparar envío de correo al admin usando App Password (SMTP)
+    // Endpoint HTTP definido por el deploy.
+    const fnUrl = (window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__ || "");
+
+    if (fnUrl) {
+      try {
+        await fetch(fnUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: payload.name,
+            email: payload.email,
+            subject: payload.subject,
+            message: payload.message,
+          }),
+        });
+      } catch (e) {
+        console.warn("No se pudo enviar email al admin:", e);
+      }
+    } else {
+      console.warn(
+        "Falta configurar window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__ con la URL del endpoint sendContactEmail"
+      );
+    }
+
+    return result.id;
+  } catch (error) {
+    console.error("Error saving message:", error);
+    throw error;
+  }
+}
+
+export async function updateMessageStatus(id, status) {
+  if (!supabaseReady) {
+    const list = readLocal(KEYS.messages, []).map((item) => item.id === id ? { ...item, status } : item);
+    return writeLocal(KEYS.messages, list);
+  }
+  
+  try {
+    const { error } = await supabase
+      .from("messages")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    
+    if (error) throw error;
+    return id;
+  } catch (error) {
+    console.error("Error updating message status:", error);
+    throw error;
+  }
+}
+
+export async function saveUser(data) {
+  const payload = {
+    ...data,
+    role: data.role || "user",
+    email: String(data.email || "").trim().toLowerCase(),
+  };
+  const id = payload.id || payload.email;
+
+  if (!supabaseReady) {
+    const existing = readLocal(KEYS.users, []).find((item) => item.id === id);
+    const saved = { ...payload, id };
+    if (!saved.password && existing?.password) saved.password = existing.password;
+    if (!saved.password) delete saved.password;
+    const result = localUpsert(KEYS.users, saved);
+    addActivity({ type: "user", text: `Usuario guardado: ${payload.email}` });
+    return result;
+  }
+
+  delete payload.id;
+  delete payload.password;
+  delete payload.photoFile;
+  
+  const timestamp = new Date().toISOString();
+  const dataToSave = { 
+    ...payload, 
+    updated_at: timestamp,
+    ...(id ? {} : { created_at: timestamp })
+  };
+
+  try {
+    if (id) {
+      const { error } = await supabase
+        .from("users")
+        .update(dataToSave)
+        .eq("id", id);
+      
+      if (error) throw error;
+    } else {
+      const { data: result, error } = await supabase
+        .from("users")
+        .insert(dataToSave)
+        .select()
+        .single();
+      
+      if (error) throw error;
+    }
+    
+    // Registrar actividad
+    await saveActivity({ type: "user", text: `Usuario guardado: ${payload.email}` });
+    
+    return id;
+  } catch (error) {
+    console.error("Error saving user:", error);
+    throw error;
+  }
+}
+
+export async function deleteGuide(id) {
+  if (!supabaseReady) return localDelete(KEYS.guides, id);
+  
+  try {
+    const { error } = await supabase
+      .from("guides")
+      .delete()
+      .eq("id", id);
+    
+    if (error) throw error;
+    
+    // Registrar actividad
+    await saveActivity({ type: "guide", text: `Guia eliminada: ${id}` });
+    
+    return id;
+  } catch (error) {
+    console.error("Error deleting guide:", error);
+    throw error;
+  }
+}
+
+export async function deleteCareer(id) {
+  if (!supabaseReady) return localDelete(KEYS.careers, id);
+  
+  try {
+    const { error } = await supabase
+      .from("careers")
+      .delete()
+      .eq("id", id);
+    
+    if (error) throw error;
+    return id;
+  } catch (error) {
+    console.error("Error deleting career:", error);
+    throw error;
+  }
+}
+
+export async function deleteUser(id) {
+  if (!supabaseReady) return localDelete(KEYS.users, id);
+  
+  try {
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", id);
+    
+    if (error) throw error;
+    return id;
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    throw error;
+  }
+}
+
+export async function saveActivity(activity) {
+  if (!supabaseReady) {
+    localUpsert(KEYS.activity, { ...activity, createdAt: new Date().toISOString() });
+    return;
+  }
+  
+  try {
+    const { error } = await supabase
+      .from("activity")
+      .insert({ 
+        ...activity, 
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error saving activity:", error);
+    // No lanzamos el error para evitar interrumpir el flujo principal
+  }
+}
+
+// Funciones de modo local (mantener compatibilidad)
+export function saveLocalUser(user) {
+  if (supabaseReady) return;
+  localUpsert(KEYS.users, { ...user, role: user.role || "user" });
+}
+
+export function localUsers() {
+  ensureLocalSeed();
+  return readLocal(KEYS.users, []);
+}
+
+export function getLocalSession() {
+  try {
+    return JSON.parse(sessionStorage.getItem("learnmore.session"));
+  } catch {
+    return null;
+  }
+}
+
+export function setLocalSession(session) {
+  sessionStorage.setItem("learnmore.session", JSON.stringify(session));
+}
+
+export function clearLocalSession() {
+  sessionStorage.removeItem("learnmore.session");
+}
+
+export function getLocalCurrentUser() {
+  const session = getLocalSession();
+  if (!session?.email) return null;
+  return localUsers().find((user) => user.email === session.email) || session;
+}
+
+export function addActivity(activity) {
+  if (supabaseReady) {
+    saveActivity(activity);
+    return;
+  }
+  localUpsert(KEYS.activity, { ...activity, createdAt: new Date().toISOString() });
+}
+
+// Helper functions for matricula generation
+export function getCuatrimestreFromDate(date) {
+  const month = date.getMonth() + 1; // getMonth() returns 0-11, so add 1
+  if (month >= 9 && month <= 12) {
+    return 0; // September-December
+  } else if (month >= 1 && month <= 4) {
+    return 1; // January-April
+  } else {
+    return 2; // May-August
+  }
+}
+
+export function getCareerCodeFromName(careerName) {
+  if (!careerName) return "00"; // Default for unknown career
+  
+  const normalized = careerName.toLowerCase().trim();
+  
+  if (normalized.includes("mecatronica") || normalized.includes("mecatrónica")) {
+    return "01";
+  } else if (normalized.includes("ti") || normalized.includes("innovacion") || normalized.includes("innovación") || normalized.includes("digital")) {
+    return "02";
+  } else if (normalized.includes("procesos") || normalized.includes("industriales")) {
+    return "03";
+  } else {
+    // Default to first career if not matched
+    return "01";
+  }
+}
+
+export async function generateMatricula(careerName) {
+  try {
+    // Calculate generation as year - 2000 (e.g., 2024 -> 24)
+    const currentYear = new Date().getFullYear();
+    const generation = String(currentYear - 2000);
+    
+    // Get career code
+    const careerCode = getCareerCodeFromName(careerName);
+    
+    // Get current cuatrimestre
+    const now = new Date();
+    const cuatrimestre = getCuatrimestreFromDate(now);
+    
+    // Count existing students with same career code and cuatrimestre
+    let count = 0;
+    
+    if (supabaseReady) {
+      // Get all users to check their registration date and career
+      const { data: users, error } = await supabase
+        .from("users")
+        .select("id, career, created_at")
+        .eq("role", "user"); // Only count students, not admins
+      
+      if (error) throw error;
+      
+      if (users) {
+        count = users.filter(user => {
+          // Check if career matches (by mapping to same code)
+          const userCareerCode = getCareerCodeFromName(user.career);
+          if (userCareerCode !== careerCode) return false;
+          
+          // Check if registration date has same cuatrimestre
+          const registrationDate = new Date(user.created_at);
+          const userCuatrimestre = getCuatrimestreFromDate(registrationDate);
+          return userCuatrimestre === cuatrimestre;
+        }).length;
+      }
+    } else {
+      // Local storage mode
+      const users = localUsers();
+      count = users.filter(user => {
+        // Check if career matches (by mapping to same code)
+        const userCareerCode = getCareerCodeFromName(user.career);
+        if (userCareerCode !== careerCode) return false;
+        
+        // Check if registration date has same cuatrimestre
+        const registrationDate = new Date(user.createdAt || user.created_at);
+        const userCuatrimestre = getCuatrimestreFromDate(registrationDate);
+        return userCuatrimestre === cuatrimestre;
+      }).length;
+    }
+    
+    // Format consecutive number with leading zeros (at least 3 digits)
+    const consecutive = String(count + 1).padStart(3, '0');
+    
+    // Return formatted matricula: generation-careerCode-consecutive
+    return `${generation}-${careerCode}-${consecutive}`;
+  } catch (error) {
+    console.error("Error generating matricula:", error);
+    // Fallback to a simple timestamp-based ID to avoid blocking registration
+    const currentYear = new Date().getFullYear();
+    const generation = String(currentYear - 2000);
+    return `${generation}-00-${Date.now().toString().slice(-3).padStart(3, '0')}`;
+  }
+}

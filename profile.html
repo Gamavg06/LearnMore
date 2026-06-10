@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Perfil | LEARNMORE</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="logo" href="index.html">LEARNMORE</a>
+    <ul class="nav-links">
+      <li><a href="index.html#inicio" data-i18n="nav.home">Inicio</a></li>
+      <li><a href="index.html#guias" data-i18n="nav.guides">Guias</a></li>
+      <li><a href="index.html#contacto" data-i18n="nav.contact">Contacto</a></li>
+      <li><a class="nav-cta" href="profile.html" data-i18n="nav.profile">Perfil</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Cambiar tema">T</button>
+      <button class="chip-btn" id="languageToggle" type="button">ES</button>
+    </div>
+  </nav>
+
+  <main class="profile-page">
+    <section class="profile-card">
+      <span class="eyebrow" data-i18n="profile.badge">Cuenta</span>
+      <h1 data-i18n="profile.title">Mi perfil</h1>
+      <p class="profile-summary" id="profileSummary">Administra tu informacion personal y tu sesion.</p>
+
+      <form class="profile-form" id="profileForm">
+        <div class="profile-photo-panel">
+          <label class="profile-photo-picker" for="profilePhotoInput" aria-label="Cambiar foto de perfil">
+            <img id="profilePhotoPreview" alt="Foto de perfil">
+            <span id="profilePhotoInitials">SG</span>
+            <strong data-i18n="profile.photo">Cambiar foto</strong>
+          </label>
+          <input id="profilePhotoInput" name="photoFile" type="file" accept="image/*" hidden>
+          <input id="profilePhotoData" name="photoData" type="hidden">
+        </div>
+        <div class="form-row">
+          <label><span data-i18n="form.name">Nombre</span><input name="name" required></label>
+          <label><span data-i18n="form.email">Correo</span><input name="email" type="email" readonly></label>
+        </div>
+<div class="form-row">
+            <label><span data-i18n="form.career">Carrera</span>
+              <select name="career">
+                <option value="01">Mecatronica</option>
+                <option value="02">TI e Innovacion Digital</option>
+                <option value="03">Procesos Industriales</option>
+              </select>
+            </label>
+            <label><span data-i18n="profile.phone">Telefono</span><input name="phone" type="tel"></label>
+          </div>
+         <div class="form-row">
+            <label><span data-i18n="profile.cuatrimestre">Cuatrimestre</span><input name="semester" type="number" min="0" max="20" readonly></label>
+            <label><span data-i18n="profile.studentId">Matricula</span><input name="studentId"></label>
+          </div>
+        <label><span data-i18n="profile.bio">Informacion personal</span><textarea name="bio" data-i18n-placeholder="profile.bioPlaceholder" placeholder="Agrega notas, intereses o informacion academica"></textarea></label>
+
+        <div class="form-actions">
+          <button class="submit-btn" type="submit" data-i18n="profile.save">Guardar perfil</button>
+          <button class="btn-secondary" id="logoutProfileBtn" type="button" data-i18n="profile.logout">Cerrar sesion</button>
+          <button class="danger-action" id="deleteAccountBtn" type="button" data-i18n="profile.delete">Borrar cuenta</button>
+        </div>
+        <p class="form-note" id="profileStatus"></p>
+      </form>
+    </section>
+
+    <section class="profile-card" id="myCommentsSection">
+      <span class="eyebrow">Mis datos</span>
+      <h2>Mis comentarios</h2>
+      <div class="admin-list" id="myCommentsList"></div>
+    </section>
+
+    <section class="profile-card" id="myReviewsSection">
+      <span class="eyebrow">Mis datos</span>
+      <h2>Mis reseñas</h2>
+      <div class="admin-list" id="myReviewsList"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/profile.js"></script>
+</body>
+</html>

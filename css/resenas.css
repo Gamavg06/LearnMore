@@ -1,0 +1,165 @@
+.resenas {
+  max-width: 900px;
+  margin: 3rem auto 4rem;
+  padding: 0 2rem;
+}
+
+.resenas h2 {
+  font-family: "Syne", sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text);
+}
+
+.resena-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.resena-form h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.resena-form input[type="text"],
+.resena-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.resena-form input:focus,
+.resena-form textarea:focus {
+  border-color: var(--accent, #888);
+}
+
+.stars-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stars-container span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 2px;
+  line-height: 1;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+
+.star.active {
+  color: #BA7517;
+}
+
+#submitBtn {
+  width: 100%;
+  padding: 10px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+#submitBtn:hover {
+  opacity: 0.85;
+}
+
+.error-msg {
+  color: var(--danger, #c0392b);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* Tarjetas de reseña */
+.review-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.review-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0,212,255,0.18), rgba(124,58,237,0.22));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.review-meta {
+  flex: 1;
+}
+
+.review-meta strong {
+  font-size: 14px;
+  display: block;
+  color: var(--text);
+}
+
+.review-meta small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.review-stars {
+  font-size: 16px;
+}
+
+.review-comment {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.no-reviews {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 2rem 0;
+}
