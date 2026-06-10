@@ -357,13 +357,18 @@ export async function saveCareer(data) {
     if (existing?.length) {
       const { error } = await supabase
         .from("careers")
-        .update({ description: payload.description, color: payload.color, updated_at: timestamp })
+        .update({ description: payload.description, color: payload.color })
         .eq("id", existing[0].id);
       if (error) throw error;
     } else {
       const { error } = await supabase
         .from("careers")
-        .insert({ name: payload.name, description: payload.description, color: payload.color, created_at: timestamp, updated_at: timestamp })
+        .insert({
+          name: payload.name,
+          description: payload.description,
+          color: payload.color,
+          created_at: timestamp,
+        })
         .select()
         .single();
       if (error) throw error;
