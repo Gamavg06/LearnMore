@@ -15,31 +15,29 @@ const KEYS = {
   reviews: "learnmore.reviews",
 };
 
-// Default data for local storage seeding
 export const defaultCareers = [
   {
-    id: "mecatronica",
+    id: "01",            // 👈 Cambiado de "mecatronica" a "01"
     key: "01",
     name: "Mecatrónica",
     desc: "Carrera de Mecatrónica",
     color: "#00d4ff"
   },
   {
-    id: "ti",
+    id: "02",            // 👈 Cambiado de "ti" a "02"
     key: "02",
     name: "TI e Innovación Digital",
     desc: "Carrera de Tecnologías de la Información e Innovación Digital",
     color: "#7c3aed"
   },
   {
-    id: "procesos",
+    id: "03",            // 👈 Cambiado de "procesos" a "03"
     key: "03",
     name: "Procesos Industriales",
     desc: "Carrera de Procesos Industriales",
     color: "#10b981"
   }
 ];
-
 export const defaultGuides = [];
 
 // Funciones para modo local (idénticas a las originales)
@@ -332,54 +330,64 @@ if (payload.file && payload.file instanceof File) {
     throw error;
   }
 }
-
 export async function saveCareer(data) {
+  // 1. Extraemos el identificador de texto limpio (ej: "01", "02", "ti") desde el formulario
+  const careerId = String(data.key || data.id || "").trim().toLowerCase();
+
   const payload = {
+    id: careerId, // Asignamos la clave directamente al campo obligatorio ID de la BD
     name: data.name || "",
-    description: data.desc || data.description || "",
+    description: data.description || data.desc || "", // Mapeamos ambas variantes de descripción
     color: data.color || "#00d4ff",
   };
 
+  // Respaldo en LocalStorage si Supabase está caído o desconectado
   if (!supabaseReady) {
-    return localUpsert(KEYS.careers, { ...payload, id: payload.key || payload.name });
+    return localUpsert(KEYS.careers, payload);
   }
 
   const timestamp = new Date().toISOString();
 
   try {
+    // 2. Consultamos directamente si ya existe este ID manual en Supabase
     const { data: existing, error: selectError } = await supabase
       .from("careers")
       .select("id")
-      .eq("name", payload.name);
+      .eq("id", careerId)
+      .maybeSingle(); // Evita lanzar excepciones si no encuentra nada
 
     if (selectError) throw selectError;
 
-    if (existing?.length) {
+    if (existing) {
+      // 3. Si ya existe, actualizamos los campos dinámicos usando su ID como referencia
       const { error } = await supabase
         .from("careers")
-        .update({ description: payload.description, color: payload.color })
-        .eq("id", existing[0].id);
+        .update({
+          name: payload.name,
+          description: payload.description,
+          color: payload.color
+        })
+        .eq("id", careerId);
       if (error) throw error;
     } else {
+      // 4. Si es nuevo, insertamos el registro inyectando manualmente nuestro ID de texto
       const { error } = await supabase
         .from("careers")
         .insert({
+          id: payload.id,
           name: payload.name,
           description: payload.description,
           color: payload.color,
           created_at: timestamp,
-        })
-        .select()
-        .single();
+        });
       if (error) throw error;
     }
-    return payload.name;
+    return careerId;
   } catch (error) {
     console.error("Error saving career:", error);
     throw error;
   }
 }
-
 export async function saveMessage(data) {
   const payload = { ...data, status: "nuevo", created_at: new Date().toISOString() };
 
@@ -575,18 +583,26 @@ export async function deleteGuide(id) {
 }
 
 export async function deleteCareer(id) {
-  if (!supabaseReady) return localDelete(KEYS.careers, id);
+  // Normalizamos el ID para asegurarnos de que busque "01", "ti", etc., de forma limpia
+  const careerId = String(id || "").trim().toLowerCase();
+
+  if (!supabaseReady) {
+    return localDelete(KEYS.careers, careerId);
+  }
 
   try {
-    const { error } = await supabase.from("careers").delete().eq("id", id);
+    const { error } = await supabase
+      .from("careers")
+      .delete()
+      .eq("id", careerId);
+
     if (error) throw error;
-    return id;
+    return careerId;
   } catch (error) {
     console.error("Error deleting career:", error);
     throw error;
   }
 }
-
 export async function deleteUser(id) {
   if (!supabaseReady) return localDelete(KEYS.users, id);
 
