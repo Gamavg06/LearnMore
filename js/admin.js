@@ -1,5 +1,5 @@
 import { initTheme } from "./theme.js";
-import { initLanguage } from "./language.js";
+import { initLanguage, translate, translateDynamic } from "./language.js";
 import { supabase, supabaseReady } from './supabase.js';
 import {
   subscribeGuides,
@@ -139,11 +139,11 @@ document.querySelector("#guideForm")?.addEventListener("submit", async (event) =
   data.sem = Number(data.sem || 1);
 
   try {
-    if (statusElement) statusElement.textContent = "Guardando guía...";
+    if (statusElement) statusElement.textContent = translate("admin.savingGuide");
     await saveGuide(data);
     form.reset();
     if (form.id) form.id.value = "";
-    if (statusElement) statusElement.textContent = "Guia guardada correctamente.";
+    if (statusElement) statusElement.textContent = translate("admin.guideSaved");
   } catch (error) {
     if (statusElement) statusElement.textContent = `Error: ${error.message}`;
   }
@@ -165,7 +165,7 @@ document.querySelector("#careerForm")?.addEventListener("submit", async (event) 
     form.reset();
     if (form.color) form.color.value = "#00d4ff";
   } catch (error) {
-    alert("Error al guardar carrera: " + error.message);
+    alert(translate("admin.errorSaveCareer") + " " + error.message);
   }
 });
 
@@ -177,7 +177,7 @@ document.querySelector("#userForm")?.addEventListener("submit", async (event) =>
     await saveUser(Object.fromEntries(new FormData(form)));
     form.reset();
     if (form.id) form.id.value = "";
-    if (statusElement) statusElement.textContent = "Usuario guardado correctamente.";
+    if (statusElement) statusElement.textContent = translate("admin.userSaved");
   } catch (error) {
     if (statusElement) statusElement.textContent = `Error: ${error.message}`;
   }
@@ -202,7 +202,8 @@ function switchView(view) {
 }
 
 function viewLabel(view) {
-  return { dashboard: "Dashboard", guides: "Guias", careers: "Carreras", messages: "Mensajes", users: "Usuarios", reviews: "Reseñas" }[view] || view;
+  const keys = { dashboard: "admin.dashboard", guides: "admin.guides", careers: "admin.careers", messages: "admin.messages", users: "admin.users", reviews: "admin.reviews" };
+  return keys[view] ? translate(keys[view]) : view;
 }
 
 function renderDashboard() {
@@ -211,13 +212,13 @@ function renderDashboard() {
 
   const semesters = new Set(guides.map((guide) => guide.sem));
   const metrics = [
-    ["Guias", guides.length],
-    ["Carreras", careers.length],
-    ["Semestres", semesters.size],
-    ["Mensajes", contactMessages.length + gmailMessages.length],
-    ["Usuarios", users.length],
-    ["Reseñas", reviews.length],
-    ["Supabase", supabaseReady ? "Activo" : "Local"],
+    [translate("admin.guides"), guides.length],
+    [translate("admin.careers"), careers.length],
+    [translate("stats.semesters"), semesters.size],
+    [translate("admin.messages"), contactMessages.length + gmailMessages.length],
+    [translate("admin.users"), users.length],
+    [translate("admin.reviews"), reviews.length],
+    ["Supabase", supabaseReady ? translate("admin.active") : translate("admin.local")],
   ];
 
   metricGrid.innerHTML = metrics
@@ -232,7 +233,7 @@ function renderActivity() {
   const list = activity.slice(0, 8);
   activityList.innerHTML = list.length
     ? list.map((item) => `<article class="list-item"><strong>${item.text || item.type}</strong><p>${formatDate(item.createdAt || item.created_at)}</p></article>`).join("")
-    : `<p class="form-note">Sin actividad reciente.</p>`;
+    : `<p class="form-note">${translate("admin.activityNone")}</p>`;
 }
 
 function renderCareerSelect() {
@@ -240,42 +241,41 @@ function renderCareerSelect() {
   if (!guideCareer) return;
 
   const opts = [
-    { key: "general", name: "General (todas las carreras)", id: "general" },
+    { key: "general", name: translate("admin.careerGeneral"), id: "general" },
     ...normalizeCareers(careers)
   ];
 
   guideCareer.innerHTML = opts
     .map((career) => {
       const value = career.key || career.id;
-      const label = career.name;
+      const transKey = `career.${career.id || career.key}`;
+      const label = translate(transKey) !== transKey ? translate(transKey) : career.name;
       return `<option value="${value}">${label}</option>`;
     })
     .join("");
 }
 
-function renderGuides() {
+async function renderGuides() {
   const guideList = document.querySelector("#guideList");
   if (!guideList) return;
 
   console.log('[admin] renderGuides called, guides count:', guides.length);
 
-  guideList.innerHTML = guides
-    .map(
-      (guide) => `
+  const cardsHtml = await Promise.all(guides.map(async (guide) => {
+    const titleTrans = await translateDynamic(guide.title);
+    const descTrans = await translateDynamic(guide.desc);
+    return `
       <article class="list-item">
-        <header><strong>${guide.title}</strong><span class="pill">Sem. ${guide.sem}</span></header>
-        <p>${guide.desc}</p>
+        <header><strong>${titleTrans}</strong><span class="pill">${translate("profile.semester")} ${guide.sem}</span></header>
+        <p>${descTrans}</p>
         <div class="item-actions">
-          <button class="small-btn" data-edit-guide="${guide.id}" type="button">Editar</button>
-          <button class="danger-btn" data-delete-guide="${guide.id}" type="button">Eliminar</button>
+          <button class="small-btn" data-edit-guide="${guide.id}" type="button">${translate("admin.edit")}</button>
+          <button class="danger-btn" data-delete-guide="${guide.id}" type="button">${translate("admin.delete")}</button>
         </div>
-      </article>`
-    )
-    .join("");
+      </article>`;
+  }));
 
-  // Delegación de eventos: no aquí.
-  // (Los botones se regeneran en renderGuides(), pero el handler se registra
-  // una sola vez con delegación en el contenedor #guideList.)
+  guideList.innerHTML = cardsHtml.join("");
 }
 
 // Delegación de eventos: funciona aunque renderGuides() vuelva a inyectar HTML.
@@ -292,11 +292,11 @@ if (guideListEl) {
     const delBtn = e.target.closest("[data-delete-guide]");
     if (delBtn) {
       console.log('[admin] Click delete guide, id:', delBtn.dataset.deleteGuide);
-      if (confirm("¿Estás seguro de eliminar esta guía?")) {
+      if (confirm(translate("profile.confirmDelete"))) {
         try {
           await deleteGuide(delBtn.dataset.deleteGuide);
         } catch (error) {
-          alert("Error al eliminar: " + error.message);
+          alert(translate("profile.errorDelete") + " " + error.message);
         }
       }
     }
@@ -327,23 +327,26 @@ function fillGuide(id) {
   switchView("guides");
 }
 
-function renderCareers() {
+async function renderCareers() {
   const careerList = document.querySelector("#careerList");
   if (!careerList) return;
 
-  careerList.innerHTML = careers
-    .map(
-      (career) => `
+  const cardsHtml = await Promise.all(careers.map(async (career) => {
+    const transKey = `career.${career.id || career.key}`;
+    const name = translate(transKey) !== transKey ? translate(transKey) : career.name;
+    const descTrans = await translateDynamic(career.desc || career.description || "");
+    return `
       <article class="list-item">
-        <header><strong>${career.name}</strong><span class="pill">${career.key || career.id}</span></header>
-        <p>${career.desc}</p>
+        <header><strong>${name}</strong><span class="pill">${career.key || career.id}</span></header>
+        <p>${descTrans}</p>
         <div class="item-actions">
-          <button class="small-btn" data-edit-career="${career.id}" type="button">Editar</button>
-          <button class="danger-btn" data-delete-career="${career.id}" type="button">Eliminar</button>
+          <button class="small-btn" data-edit-career="${career.id}" type="button">${translate("admin.edit")}</button>
+          <button class="danger-btn" data-delete-career="${career.id}" type="button">${translate("admin.delete")}</button>
         </div>
-      </article>`
-    )
-    .join("");
+      </article>`;
+  }));
+
+  careerList.innerHTML = cardsHtml.join("");
 }
 
 const careerListEl = document.querySelector("#careerList");
@@ -357,11 +360,11 @@ if (careerListEl) {
 
     const delBtn = e.target.closest("[data-delete-career]");
     if (delBtn && careerListEl.contains(delBtn)) {
-      if (confirm("¿Estás seguro de eliminar esta carrera?")) {
+      if (confirm(translate("profile.confirmDelete"))) {
         try {
           await deleteCareer(delBtn.dataset.deleteCareer);
         } catch (error) {
-          alert("Error al eliminar: " + error.message);
+          alert(translate("profile.errorDelete") + " " + error.message);
         }
       }
     }
@@ -394,7 +397,7 @@ function renderMessages() {
     combined.push({
       id: msg.id,
       type: "contact",
-      subject: msg.subject || "Mensaje",
+      subject: msg.subject || translate("form.message"),
       name: msg.name || "",
       email: msg.email || "",
       message: msg.message || "",
@@ -411,7 +414,7 @@ function renderMessages() {
     combined.push({
       id: msg.id,
       type: "gmail",
-      subject: msg.subject || "(Sin asunto)",
+      subject: msg.subject || translate("(Sin asunto)"),
       name: msg.from || "",
       email: "",
       message: msg.body || "",
@@ -436,19 +439,24 @@ function renderMessages() {
         </header>
         <p><strong>${message.name}</strong>${message.email ? ` — ${message.email}` : ""}</p>
         <p>${message.message}</p>
-        ${message.reply ? `<p class="reply-preview"><strong>Respuesta:</strong> ${message.reply}</p>` : ""}
+        ${message.reply ? `<p class="reply-preview"><strong>${translate("admin.replyLabel")}</strong> ${message.reply}</p>` : ""}
         <div class="item-actions">
-          ${message.status !== "leido" && message.status !== "respondido" ? `<button class="small-btn" data-message-read="${message.id}" type="button">Marcar leído</button>` : ""}
-          ${!message.reply ? `<button class="small-btn" data-message-reply="${message.id}" type="button">Responder</button>` : ""}
+          ${message.status !== "leido" && message.status !== "respondido" ? `<button class="small-btn" data-message-read="${message.id}" type="button">${translate("admin.markRead")}</button>` : ""}
+          ${!message.reply ? `<button class="small-btn" data-message-reply="${message.id}" type="button">${translate("admin.reply")}</button>` : ""}
         </div>
       </article>`
         )
         .join("")
-    : `<p class="form-note">No hay mensajes.</p>`;
+    : `<p class="form-note">${translate("admin.noMessages")}</p>`;
 }
 
 function statusLabel(status) {
-  const labels = { nuevo: "Nuevo", leido: "Leído", revisado: "Revisado", respondido: "Respondido" };
+  const labels = {
+    nuevo: translate("profile.new"),
+    leido: translate("profile.read"),
+    revisado: translate("profile.read"),
+    respondido: translate("profile.replied")
+  };
   return labels[status] || status;
 }
 
@@ -460,7 +468,7 @@ if (messageListEl) {
       try {
         await updateMessageStatus(readBtn.dataset.messageRead, "leido");
       } catch (error) {
-        alert("Error al actualizar mensaje: " + error.message);
+        alert(translate("profile.errorUpdate") + " " + error.message);
       }
       return;
     }
@@ -485,7 +493,7 @@ function openReplyDrawer(id) {
   const overlay = document.getElementById("replyDrawerOverlay");
 
   messageIdEl.value = id;
-  subjectEl.textContent = message.subject || "Mensaje";
+  subjectEl.textContent = message.subject || translate("form.message");
   recipientEl.textContent = message.name || message.email || "";
   textEl.value = message.reply || "";
 
@@ -532,7 +540,7 @@ document.getElementById("replyDrawerForm")?.addEventListener("submit", async (ev
     }
     closeReplyDrawer();
   } catch (error) {
-    alert("Error al responder: " + error.message);
+    alert(translate("admin.errorReply") + " " + error.message);
   }
 });
 
@@ -563,21 +571,25 @@ function renderUsers() {
   userList.innerHTML = filtered.length
     ? filtered
         .map(
-          (user) => `
-        <article class="list-item">
-          <header><strong>${user.name || user.email}</strong><span class="pill">${user.role || "user"}</span></header>
-          <p>${user.email}</p>
-          <div class="item-actions">
-            <button class="small-btn" data-edit-user="${user.id}" type="button">Editar</button>
-            <button class="small-btn" data-role-user="${user.id}" data-role="${user.role === "admin" ? "user" : "admin"}" type="button">
-              ${user.role === "admin" ? "Quitar admin" : "Hacer admin"}
-            </button>
-            <button class="danger-btn" data-delete-user="${user.id}" type="button">Eliminar</button>
-          </div>
-        </article>`
+          (user) => {
+            const roleBadge = user.role === "admin" ? translate("admin.userRoleAdmin") : translate("admin.userRoleUser");
+            const roleActionText = user.role === "admin" ? translate("admin.removeAdmin") : translate("admin.makeAdmin");
+            return `
+            <article class="list-item">
+              <header><strong>${user.name || user.email}</strong><span class="pill">${roleBadge}</span></header>
+              <p>${user.email}</p>
+              <div class="item-actions">
+                <button class="small-btn" data-edit-user="${user.id}" type="button">${translate("admin.edit")}</button>
+                <button class="small-btn" data-role-user="${user.id}" data-role="${user.role === "admin" ? "user" : "admin"}" type="button">
+                  ${roleActionText}
+                </button>
+                <button class="danger-btn" data-delete-user="${user.id}" type="button">${translate("admin.delete")}</button>
+              </div>
+            </article>`;
+          }
         )
         .join("")
-    : `<p class="form-note">No hay usuarios con esos filtros.</p>`;
+    : `<p class="form-note">${translate("admin.noUsersFiltered")}</p>`;
 }
 
 const userListEl = document.querySelector("#userList");
@@ -597,11 +609,11 @@ if (userListEl) {
 
     const delBtn = e.target.closest("[data-delete-user]");
     if (delBtn && userListEl.contains(delBtn)) {
-      if (confirm("¿Estás seguro de eliminar este usuario?")) {
+      if (confirm(translate("profile.confirmDelete"))) {
         try {
           await deleteUser(delBtn.dataset.deleteUser);
         } catch (error) {
-          alert("Error al eliminar: " + error.message);
+          alert(translate("profile.errorDelete") + " " + error.message);
         }
       }
     }
@@ -631,7 +643,7 @@ async function changeUserRole(id, role) {
 }
 
 function formatDate(value) {
-  if (!value) return "Ahora";
+  if (!value) return translate("admin.now");
   if (value.seconds) return new Date(value.seconds * 1000).toLocaleString();
   return new Date(value).toLocaleString();
 }
@@ -661,21 +673,21 @@ function renderReviews() {
           (review) => `
         <article class="list-item">
           <header>
-            <strong>${review.name || "Anónimo"}</strong>
+            <strong>${review.name || translate("profile.anonymous")}</strong>
             <span class="pill">${review.stars ? "★".repeat(review.stars) + "☆".repeat(5 - review.stars) : ""}</span>
-            <span class="pill">${review.status || "nuevo"}</span>
+            <span class="pill">${statusLabel(review.status)}</span>
           </header>
           <p>${review.comment || review.message || ""}</p>
-          ${review.reply ? `<p class="reply-preview"><strong>Respuesta:</strong> ${review.reply}</p>` : ""}
+          ${review.reply ? `<p class="reply-preview"><strong>${translate("profile.adminReply")}</strong> ${review.reply}</p>` : ""}
           <div class="item-actions">
-            ${review.status !== "leido" ? `<button class="small-btn" data-review-read="${review.id}" type="button">Marcar leído</button>` : ""}
-            ${!review.reply ? `<button class="small-btn" data-review-reply="${review.id}" type="button">Responder</button>` : ""}
-            <button class="danger-btn" data-delete-review="${review.id}" type="button">Eliminar</button>
+            ${review.status !== "leido" ? `<button class="small-btn" data-review-read="${review.id}" type="button">${translate("admin.markRead")}</button>` : ""}
+            ${!review.reply ? `<button class="small-btn" data-review-reply="${review.id}" type="button">${translate("admin.reply")}</button>` : ""}
+            <button class="danger-btn" data-delete-review="${review.id}" type="button">${translate("admin.delete")}</button>
           </div>
         </article>`
         )
         .join("")
-    : `<p class="form-note">No hay reseñas.</p>`;
+    : `<p class="form-note">${translate("profile.noReviews")}</p>`;
 }
 
 const reviewListEl = document.querySelector("#reviewList");
@@ -686,7 +698,7 @@ if (reviewListEl) {
       try {
         await updateReviewStatus(readBtn.dataset.reviewRead, "leido");
       } catch (error) {
-        alert("Error al actualizar: " + error.message);
+        alert(translate("profile.errorUpdate") + " " + error.message);
       }
       return;
     }
@@ -699,11 +711,11 @@ if (reviewListEl) {
 
     const delBtn = e.target.closest("[data-delete-review]");
     if (delBtn && reviewListEl.contains(delBtn)) {
-      if (confirm("¿Estás seguro de eliminar esta reseña?")) {
+      if (confirm(translate("profile.confirmDelete"))) {
         try {
           await deleteReview(delBtn.dataset.deleteReview);
         } catch (error) {
-          alert("Error al eliminar reseña: " + error.message);
+          alert(translate("admin.errorDeleteReview") + " " + error.message);
         }
       }
     }
@@ -714,7 +726,7 @@ function replyToReviewPrompt(id) {
   const review = reviews.find((item) => String(item.id) === String(id));
   if (!review) return;
 
-  const reply = prompt("Escribe tu respuesta:", review.reply || "");
+  const reply = prompt(translate("admin.writeReplyPrompt"), review.reply || "");
   if (reply === null) return;
 
   const adminName = getLocalSession()?.name || "Admin";
@@ -727,6 +739,22 @@ function replyToReviewPrompt(id) {
       renderReviews();
     }
   }).catch((error) => {
-    alert("Error al responder: " + error.message);
+    alert(translate("admin.errorReply") + " " + error.message);
   });
 }
+
+// Escuchador de idioma en el panel administrativo
+window.addEventListener("learnmore:language-change", () => {
+  const activeTab = document.querySelector(".admin-tab.active");
+  if (activeTab) {
+    const viewTitle = document.querySelector("#viewTitle");
+    if (viewTitle) viewTitle.textContent = viewLabel(activeTab.dataset.view);
+  }
+  renderDashboard();
+  renderCareers();
+  renderGuides();
+  renderMessages();
+  renderUsers();
+  renderReviews();
+  renderCareerSelect();
+});

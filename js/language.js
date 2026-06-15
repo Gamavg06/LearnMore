@@ -10,6 +10,30 @@ const dictionary = {
     "nav.admin": "Admin",
     "nav.profile": "Perfil",
     "nav.reviews": "Reseñas",
+    "career.mecatronica": "Mecatrónica",
+    "career.ti": "TI e Innovación Digital",
+    "career.procesos": "Procesos Industriales",
+    "career.general": "General",
+    "admin.active": "Activo",
+    "admin.local": "Local",
+    "admin.recentActivity": "Actividad reciente",
+    "admin.activityNone": "Sin actividad reciente.",
+    "admin.careerGeneral": "General (todas las carreras)",
+    "admin.edit": "Editar",
+    "admin.delete": "Eliminar",
+    "admin.removeAdmin": "Quitar admin",
+    "admin.makeAdmin": "Hacer admin",
+    "admin.markRead": "Marcar leído",
+    "admin.reply": "Responder",
+    "admin.publicSite": "Sitio público",
+    "admin.logout": "Cerrar sesión",
+    "admin.topTitle": "Panel administrativo",
+    "admin.guidesTitle": "Gestión de guías",
+    "admin.guidesPublished": "Guías publicadas",
+    "admin.careersTitle": "Gestión de carreras",
+    "admin.careersRegistered": "Carreras registradas",
+    "admin.usersTitle": "Gestión de usuarios",
+    "admin.usersRegistered": "Usuarios registrados",
     "guides.featured": "Guías destacadas",
     "guides.popularBadge": "Lo más consultado",
     "guides.popularTitle": "Guías más vistas",
@@ -149,6 +173,28 @@ const dictionary = {
     "admin.makeAdmin": "Hacer admin",
     "admin.viewPublished": "Guias publicadas",
     "admin.viewRegistered": "Carreras registradas",
+    "admin.replyLabel": "Respuesta:",
+    "admin.noMessages": "No hay mensajes.",
+    "admin.now": "Ahora",
+    "admin.savingGuide": "Guardando guía...",
+    "admin.guideSaved": "Guía guardada correctamente.",
+    "admin.errorSaveCareer": "Error al guardar carrera:",
+    "admin.userSaved": "Usuario guardado correctamente.",
+    "admin.errorDelete": "Error al eliminar:",
+    "admin.errorDeleteReview": "Error al eliminar reseña:",
+    "admin.errorReply": "Error al responder:",
+    "admin.writeReplyPrompt": "Escribe tu respuesta:",
+    "admin.noUsersFiltered": "No hay usuarios con esos filtros.",
+    "admin.replyMessageTitle": "Responder mensaje",
+    "admin.replyToLabel": "Responder a",
+    "admin.writeReplyPlaceholder": "Escribe tu respuesta...",
+    "admin.sendReplyButton": "Enviar respuesta",
+    "admin.cancelButton": "Cancelar",
+    "career.01": "Mecatrónica",
+    "career.02": "TI e Innovación Digital",
+    "career.03": "Procesos Industriales",
+    "career.00": "General",
+    "career.general": "General",
   },
   en: {
     "nav.home": "Home",
@@ -159,6 +205,30 @@ const dictionary = {
     "nav.admin": "Admin",
     "nav.profile": "Profile",
     "nav.reviews": "Reviews",
+    "career.mecatronica": "Mechatronics",
+    "career.ti": "IT & Digital Innovation",
+    "career.procesos": "Industrial Processes",
+    "career.general": "General",
+    "admin.active": "Active",
+    "admin.local": "Local",
+    "admin.recentActivity": "Recent activity",
+    "admin.activityNone": "No recent activity.",
+    "admin.careerGeneral": "General (all careers)",
+    "admin.edit": "Edit",
+    "admin.delete": "Delete",
+    "admin.removeAdmin": "Remove admin",
+    "admin.makeAdmin": "Make admin",
+    "admin.markRead": "Mark read",
+    "admin.reply": "Reply",
+    "admin.publicSite": "Public site",
+    "admin.logout": "Sign out",
+    "admin.topTitle": "Administration panel",
+    "admin.guidesTitle": "Manage guides",
+    "admin.guidesPublished": "Published guides",
+    "admin.careersTitle": "Manage careers",
+    "admin.careersRegistered": "Registered careers",
+    "admin.usersTitle": "Manage users",
+    "admin.usersRegistered": "Registered users",
     "guides.featured": "Featured guides",
     "guides.popularBadge": "Most popular",
     "guides.popularTitle": "Most viewed guides",
@@ -298,6 +368,47 @@ const dictionary = {
     "admin.makeAdmin": "Make admin",
     "admin.viewPublished": "Published guides",
     "admin.viewRegistered": "Registered careers",
+    "admin.replyLabel": "Reply:",
+    "admin.noMessages": "No messages.",
+    "admin.now": "Just now",
+    "admin.savingGuide": "Saving guide...",
+    "admin.guideSaved": "Guide saved successfully.",
+    "admin.errorSaveCareer": "Error saving career:",
+    "admin.userSaved": "User saved successfully.",
+    "admin.errorDelete": "Error deleting:",
+    "admin.errorDeleteReview": "Error deleting review:",
+    "admin.errorReply": "Error replying:",
+    "admin.writeReplyPrompt": "Write your reply:",
+    "admin.noUsersFiltered": "No users match those filters.",
+    "admin.replyMessageTitle": "Reply Message",
+    "admin.replyToLabel": "Reply to",
+    "admin.writeReplyPlaceholder": "Write your reply...",
+    "admin.sendReplyButton": "Send reply",
+    "admin.cancelButton": "Cancel",
+    "career.01": "Mechatronics",
+    "career.02": "IT & Digital Innovation",
+    "career.03": "Industrial Processes",
+    "career.00": "General",
+    "career.general": "General",
+    
+    // Dynamic Predefined Guides - Titles
+    "Planeación de Requerimientos de Materiales": "Material Requirements Planning",
+    "Lógica Externa": "External Logic",
+    "Desarrollo Web Orientado a Servicios": "Service-Oriented Web Development",
+    "Inglés Profesional y Académico": "Professional and Academic English",
+    
+    // Dynamic Predefined Guides - Descriptions & Details
+    "Guía de estudio analítica sobre el procedimiento sistemático para la planificación de componentes de fabricación, traduciendo el Plan Maestro de Producción en necesidades reales de materiales bajo fechas y cantidades exactas.": "Analytical study guide on the systematic procedure for manufacturing component planning, translating the Master Production Schedule into actual material needs under exact dates and quantities.",
+    "Guía de estudio orientada a comprender los elementos, reglas de negocio y contextos reales que existen fuera del núcleo técnico de un sistema y que determinan su correcto funcionamiento e interacción con el entorno.": "Study guide oriented to understand the elements, business rules and real contexts that exist outside the technical core of a system and that determine its correct functioning and interaction with the environment.",
+    "Guía técnica centrada en el diseño, desarrollo y despliegue de aplicaciones web basadas en la arquitectura orientada a servicios (SOA) y microservicios, priorizando la escalabilidad y la comunicación eficiente entre sistemas.": "Technical guide focused on the design, development and deployment of web applications based on service-oriented architecture (SOA) and microservices, prioritizing scalability and efficient communication between systems.",
+    "Guía de aprendizaje integral diseñada para fortalecer las cuatro habilidades lingüísticas (lectura, comprensión auditiva y expresión oral) en el idioma inglés, adaptada para el éxito en el entorno universitario y laboral multidisciplinario.": "Comprehensive learning guide designed to strengthen the four language skills (reading, listening, writing and speaking) in the English language, adapted for success in the university and multidisciplinary work environment.",
+    
+    // Syllabus topics
+    "Plan Maestro de Producción (MPS)": "Master Production Schedule (MPS)",
+    "Lista de Materiales (BOM)": "Bill of Materials (BOM)",
+    "Demanda Dependiente": "Dependent Demand",
+    "Requerimientos Netos": "Net Requirements",
+    "Explosión de Materiales": "Explosion of Materials",
   },
 };
 
@@ -338,4 +449,31 @@ export function initLanguage() {
 export function translate(key, lang = getLanguage()) {
   if (!dictionary[lang]) lang = "es";
   return dictionary[lang][key] || key;
+}
+
+export async function translateDynamic(text, targetLang = getLanguage()) {
+  if (!text) return text;
+  
+  if (dictionary[targetLang] && dictionary[targetLang][text]) {
+    return dictionary[targetLang][text];
+  }
+
+  if (targetLang === "es") {
+    return text;
+  }
+
+  // Try MyMemory translation API fallback for English
+  try {
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=es|en`);
+    const data = await res.json();
+    if (data.responseData && data.responseData.translatedText) {
+      if (!dictionary[targetLang]) dictionary[targetLang] = {};
+      dictionary[targetLang][text] = data.responseData.translatedText;
+      return data.responseData.translatedText;
+    }
+  } catch (error) {
+    console.warn("MyMemory translation failed:", error);
+  }
+
+  return text;
 }

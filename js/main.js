@@ -1,5 +1,5 @@
 import { initTheme } from "./theme.js";
-import { initLanguage, applyLanguage, translate } from "./language.js";
+import { initLanguage, applyLanguage, translate, translateDynamic } from "./language.js";
 import { supabaseReady, supabase, onAuthStateChanged } from "./supabase.js";
 import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession, baseCareerOptions, incrementGuideViews } from "./guides.js";
 import { ejecutarMigracionAutomatica } from "./migrar.js";
@@ -95,16 +95,18 @@ function renderStats() {
   });
 }
 
-function renderCareers() {
+async function renderCareers() {
   if (!careersGrid) return;
   
   // Imprimimos la estructura exacta que tus estilos CSS esperan para las tarjetas de carrera
-  careersGrid.innerHTML = careers.map((career) => {
+  const cardsHtml = await Promise.all(careers.map(async (career) => {
     const cid = career.key || career.id;
     const cColor = career.color || "#00d4ff";
-    const cName = career.name || "";
-    const cDesc = career.desc || "";
+    const transKey = `career.${career.id || career.key}`;
+    const cName = translate(transKey) !== transKey ? translate(transKey) : career.name;
+    const cDesc = await translateDynamic(career.desc || career.description || "");
     const shortName = cName.slice(0, 2).toUpperCase();
+    const guidesLabel = translate("nav.home") === "Inicio" ? "guías" : "guides";
 
     return `
       <article class="career-card" style="border-top: 4px solid ${cColor}; cursor: pointer;" data-career="${cid}">
@@ -114,11 +116,13 @@ function renderCareers() {
         <h3>${cName}</h3>
         <p>${cDesc}</p>
         <span class="pill" style="background: ${cColor}15; color: ${cColor}; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: bold;">
-          ${countGuides(cid)} guías
+          ${countGuides(cid)} ${guidesLabel}
         </span>
       </article>
     `;
-  }).join("");
+  }));
+
+  careersGrid.innerHTML = cardsHtml.join("");
 
   // Añadimos el evento Click a las tarjetas para que filtren las guías automáticamente
   careersGrid.querySelectorAll("[data-career]").forEach((card) => {
@@ -138,21 +142,26 @@ function renderCareers() {
 
 function renderCareerOptions() {
   if (!contactCareer) return;
-  const options = normalizeCareers(careers).map((career) => `<option value="${career.key || career.id}">${career.name}</option>`).join("");
-  contactCareer.innerHTML = `<option value="">General</option>${options}`;
+  const options = normalizeCareers(careers).map((career) => {
+    const cid = career.key || career.id;
+    const transKey = `career.${career.id || career.key}`;
+    const name = translate(transKey) !== transKey ? translate(transKey) : career.name;
+    return `<option value="${cid}">${name}</option>`;
+  }).join("");
+  contactCareer.innerHTML = `<option value="">${translate("career.general")}</option>${options}`;
 }
 
 function renderSemesterOptions() {
   if (!semesterFilter) return;
   const current = semesterFilter.value || "all";
   const semesters = [...new Set(guides.map((guide) => Number(guide.sem)).filter(Boolean))].sort((a, b) => a - b);
-  semesterFilter.innerHTML = `<option value="all" data-i18n="filters.semester">Todos los semestres</option>${semesters.map((sem) => `<option value="${sem}">Semestre ${sem}</option>`).join("")}`;
+  const semLabel = translate("nav.home") === "Inicio" ? "Semestre" : "Semester";
+  semesterFilter.innerHTML = `<option value="all" data-i18n="filters.semester">${translate("filters.semester")}</option>${semesters.map((sem) => `<option value="${sem}">${semLabel} ${sem}</option>`).join("")}`;
   semesterFilter.value = semesters.includes(Number(current)) ? current : "all";
   activeSemester = semesterFilter.value || "all";
-  if (typeof applyLanguage === "function") applyLanguage();
 }
 
-function renderGuides() {
+async function renderGuides() {
   if (!guidesGrid) return;
   
   const currentCareer = activeCareer || "all";
@@ -164,20 +173,26 @@ function renderGuides() {
     return matchesCareer && matchesSemester;
   });
 
-  guidesGrid.innerHTML = filtered.map((guide) => `
-    <article class="guide-card">
-      <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <span class="pill">${careerName(guide.career)}</span>
-        <span class="pill">Sem. ${guide.sem}</span>
-      </div>
-      <h3>${guide.title}</h3>
-      <p>${guide.desc}</p>
-      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-        <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
-        <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
-      </div>
-    </article>
-  `).join("");
+  const cardsHtml = await Promise.all(filtered.map(async (guide) => {
+    const titleTrans = await translateDynamic(guide.title);
+    const descTrans = await translateDynamic(guide.desc);
+    return `
+      <article class="guide-card">
+        <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
+          <span class="pill">${careerName(guide.career)}</span>
+          <span class="pill">Sem. ${guide.sem}</span>
+        </div>
+        <h3>${titleTrans}</h3>
+        <p>${descTrans}</p>
+        <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
+          <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
+        </div>
+      </article>
+    `;
+  }));
+
+  guidesGrid.innerHTML = cardsHtml.join("");
   
   if (emptyGuides) {
     emptyGuides.style.display = filtered.length ? "none" : "block";
@@ -188,7 +203,7 @@ function renderGuides() {
   });
 }
 
-function openGuide(id) {
+async function openGuide(id) {
   if (!isUserLoggedIn) {
     alert(translate("profile.loginPrompt"));
     window.location.href = "login.html";
@@ -201,13 +216,17 @@ function openGuide(id) {
   // Incrementar vistas
   incrementGuideViews(id);
 
+  const titleTrans = await translateDynamic(guide.title);
+  const detailTrans = await translateDynamic(guide.detail || guide.desc);
+  const topicsTrans = await Promise.all((guide.topics || []).map(topic => translateDynamic(topic)));
+
   modalBody.innerHTML = `
-    <h2>${guide.title}</h2>
-    <p class="pill" style="display: inline-block; margin: 10px 0;">${careerName(guide.career)} - Semestre ${guide.sem}</p>
-    <p style="margin: 15px 0; line-height: 1.6;">${guide.detail || guide.desc}</p>
+    <h2>${titleTrans}</h2>
+    <p class="pill" style="display: inline-block; margin: 10px 0;">${careerName(guide.career)} - ${translate("profile.semester")} ${guide.sem}</p>
+    <p style="margin: 15px 0; line-height: 1.6;">${detailTrans}</p>
     <h3>${translate("nav.home") === "Inicio" ? "Temario" : "Syllabus"}</h3>
     <div class="filters" style="display: flex; flex-wrap: wrap; gap: 5px; margin: 15px 0;">
-      ${(guide.topics || []).map((topic) => `<span class="pill">${topic}</span>`).join("")}
+      ${topicsTrans.map((topic) => `<span class="pill">${topic}</span>`).join("")}
     </div>
     ${guide.fileUrl ? `<p style="margin-top: 20px;"><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">${translate("nav.home") === "Inicio" ? "Abrir recurso" : "Open resource"}</a></p>` : ""}
   `;
@@ -219,7 +238,10 @@ function countGuides(careerKey) {
 }
 
 function careerName(key) {
-  return careers.find((career) => (career.key || career.id) === key)?.name || key;
+  const career = careers.find((career) => (career.key || career.id) === key);
+  if (!career) return key;
+  const transKey = `career.${career.id || career.key}`;
+  return translate(transKey) !== transKey ? translate(transKey) : career.name;
 }
 
 function initSessionUi() {
@@ -280,7 +302,7 @@ function normalizeCareers(items) {
   return Array.isArray(items) && items.length ? items : baseCareerOptions();
 }
 
-function renderCarousel() {
+async function renderCarousel() {
   const track = document.querySelector("#carouselTrack");
   if (!track) return;
 
@@ -289,27 +311,33 @@ function renderCarousel() {
     return;
   }
 
-  track.innerHTML = guides.map((guide) => `
-    <article class="guide-card">
-      <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <span class="pill">${careerName(guide.career)}</span>
-        <span class="pill">Sem. ${guide.sem}</span>
-      </div>
-      <h3>${guide.title}</h3>
-      <p>${guide.desc}</p>
-      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-        <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
-        <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
-      </div>
-    </article>
-  `).join("");
+  const cardsHtml = await Promise.all(guides.map(async (guide) => {
+    const titleTrans = await translateDynamic(guide.title);
+    const descTrans = await translateDynamic(guide.desc);
+    return `
+      <article class="guide-card">
+        <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
+          <span class="pill">${careerName(guide.career)}</span>
+          <span class="pill">Sem. ${guide.sem}</span>
+        </div>
+        <h3>${titleTrans}</h3>
+        <p>${descTrans}</p>
+        <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
+          <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
+        </div>
+      </article>
+    `;
+  }));
+
+  track.innerHTML = cardsHtml.join("");
 
   track.querySelectorAll("[data-guide]").forEach((button) => {
     button.addEventListener("click", () => openGuide(button.dataset.guide));
   });
 }
 
-function renderPopularGuides() {
+async function renderPopularGuides() {
   const grid = document.querySelector("#popularGuidesGrid");
   if (!grid) return;
 
@@ -321,21 +349,27 @@ function renderPopularGuides() {
   const sorted = [...guides].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0));
   const popular = sorted.slice(0, 4);
 
-  grid.innerHTML = popular.map((guide) => `
-    <article class="guide-card" style="border-left: 4px solid var(--accent-3);">
-      <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
-        <span class="pill">${careerName(guide.career)}</span>
-        <span class="pill">Sem. ${guide.sem}</span>
-        <span class="pill" style="color: var(--accent); border-color: var(--accent-border-soft); font-weight: bold;">🔥 ${Number(guide.views) || 0}</span>
-      </div>
-      <h3>${guide.title}</h3>
-      <p>${guide.desc}</p>
-      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
-        <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
-        <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
-      </div>
-    </article>
-  `).join("");
+  const cardsHtml = await Promise.all(popular.map(async (guide) => {
+    const titleTrans = await translateDynamic(guide.title);
+    const descTrans = await translateDynamic(guide.desc);
+    return `
+      <article class="guide-card" style="border-left: 4px solid var(--accent-3);">
+        <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
+          <span class="pill">${careerName(guide.career)}</span>
+          <span class="pill">Sem. ${guide.sem}</span>
+          <span class="pill" style="color: var(--accent); border-color: var(--accent-border-soft); font-weight: bold;">🔥 ${Number(guide.views) || 0}</span>
+        </div>
+        <h3>${titleTrans}</h3>
+        <p>${descTrans}</p>
+        <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+          <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
+          <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
+        </div>
+      </article>
+    `;
+  }));
+
+  grid.innerHTML = cardsHtml.join("");
 
   grid.querySelectorAll("[data-guide]").forEach((button) => {
     button.addEventListener("click", () => openGuide(button.dataset.guide));

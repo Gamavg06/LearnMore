@@ -9,21 +9,21 @@
 <body>
   <aside class="admin-sidebar">
     <a class="logo" href="index.html">LEARNMORE</a>
-    <button class="admin-tab active" data-view="dashboard" type="button">Dashboard</button>
-    <button class="admin-tab" data-view="guides" type="button">Guias</button>
-    <button class="admin-tab" data-view="careers" type="button">Carreras</button>
-    <button class="admin-tab" data-view="messages" type="button">Mensajes</button>
-    <button class="admin-tab" data-view="users" type="button">Usuarios</button>
-    <button class="admin-tab" data-view="reviews" type="button">Reseñas</button>
-    <a class="admin-link" href="index.html">Sitio publico</a>
-    <button class="admin-link" id="logoutBtn" type="button">Cerrar sesion</button>
+    <button class="admin-tab active" data-view="dashboard" type="button" data-i18n="admin.dashboard">Dashboard</button>
+    <button class="admin-tab" data-view="guides" type="button" data-i18n="admin.guides">Guias</button>
+    <button class="admin-tab" data-view="careers" type="button" data-i18n="admin.careers">Carreras</button>
+    <button class="admin-tab" data-view="messages" type="button" data-i18n="admin.messages">Mensajes</button>
+    <button class="admin-tab" data-view="users" type="button" data-i18n="admin.users">Usuarios</button>
+    <button class="admin-tab" data-view="reviews" type="button" data-i18n="admin.reviews">Reseñas</button>
+    <a class="admin-link" href="index.html" data-i18n="admin.publicSite">Sitio publico</a>
+    <button class="admin-link" id="logoutBtn" type="button" data-i18n="admin.logout">Cerrar sesion</button>
   </aside>
 
   <main class="admin-shell">
     <header class="admin-topbar">
       <div>
-        <span class="eyebrow">Panel administrativo</span>
-        <h1 id="viewTitle">Dashboard</h1>
+        <span class="eyebrow" data-i18n="admin.topTitle">Panel administrativo</span>
+        <h1 id="viewTitle" data-i18n="admin.dashboard">Dashboard</h1>
       </div>
       <div class="nav-actions">
         <button class="icon-btn" id="themeToggle" type="button" aria-label="Cambiar tema">T</button>
@@ -34,7 +34,7 @@
     <section class="admin-view active" id="dashboardView">
       <div class="metric-grid" id="metricGrid"></div>
       <section class="admin-card">
-        <h2>Actividad reciente</h2>
+        <h2 data-i18n="admin.recentActivity">Actividad reciente</h2>
         <div class="activity-list" id="activityList"></div>
       </section>
     </section>
@@ -42,26 +42,26 @@
     <section class="admin-view" id="guidesView">
       <div class="admin-grid">
         <form class="admin-card editor-form" id="guideForm">
-          <h2>Gestion de guias</h2>
+          <h2 data-i18n="admin.guidesTitle">Gestion de guias</h2>
           <input type="hidden" name="id">
-          <label>Titulo<input name="title" required></label>
-          <label>Descripcion<textarea name="desc" required></textarea></label>
-          <label>Detalle<textarea name="detail" required></textarea></label>
+          <label><span data-i18n="admin.guideTitleLabel">Titulo</span><input name="title" required></label>
+          <label><span data-i18n="admin.guideDescLabel">Descripcion</span><textarea name="desc" required></textarea></label>
+          <label><span data-i18n="admin.guideDetailLabel">Detalle</span><textarea name="detail" required></textarea></label>
           <div class="form-row">
-            <label>Carrera<select name="career" id="guideCareer" required></select></label>
-            <label>Semestre<input name="sem" type="number" min="1" max="12" required></label>
+            <label><span data-i18n="admin.guideCareerLabel">Carrera</span><select name="career" id="guideCareer" required></select></label>
+            <label><span data-i18n="admin.guideSemLabel">Semestre</span><input name="sem" type="number" min="1" max="12" required></label>
           </div>
-          <label>Temas separados por coma<input name="topics" required></label>
-          <label>URL de PDF o recurso<input name="fileUrl" type="url" data-i18n-placeholder="admin.fileUrlPlaceholder" placeholder="https://..."></label>
-          <label>Archivo PDF<input name="file" type="file" accept="application/pdf"></label>
+          <label><span data-i18n="admin.guideTopicsLabel">Temas separados por coma</span><input name="topics" required></label>
+          <label><span data-i18n="admin.guideFileUrlLabel">URL de PDF o recurso</span><input name="fileUrl" type="url" data-i18n-placeholder="admin.fileUrlPlaceholder" placeholder="https://..."></label>
+          <label><span data-i18n="admin.guideFileLabel">Archivo PDF</span><input name="file" type="file" accept="application/pdf"></label>
           <div class="form-actions">
-            <button class="submit-btn" type="submit">Guardar guia</button>
-            <button class="btn-secondary" id="clearGuideForm" type="button">Limpiar</button>
+            <button class="submit-btn" type="submit" data-i18n="admin.saveGuide">Guardar guia</button>
+            <button class="btn-secondary" id="clearGuideForm" type="button" data-i18n="admin.clear">Limpiar</button>
           </div>
           <p class="form-note" id="guideStatus"></p>
         </form>
         <section class="admin-card">
-          <h2>Guias publicadas</h2>
+          <h2 data-i18n="admin.viewPublished">Guias publicadas</h2>
           <div class="admin-list" id="guideList"></div>
         </section>
       </div>
@@ -70,16 +70,16 @@
     <section class="admin-view" id="careersView">
       <div class="admin-grid">
         <form class="admin-card editor-form" id="careerForm">
-          <h2>Gestion de carreras</h2>
+          <h2 data-i18n="admin.careersTitle">Gestion de carreras</h2>
           <input type="hidden" name="id">
-          <label>Clave<input name="key" data-i18n-placeholder="admin.keyPlaceholder" placeholder="ti" required></label>
-          <label>Nombre<input name="name" required></label>
-          <label>Descripcion<textarea name="desc" required></textarea></label>
-          <label>Color<input name="color" type="color" value="#00d4ff"></label>
-          <button class="submit-btn" type="submit">Guardar carrera</button>
+          <label><span data-i18n="admin.careerKeyLabel">Clave</span><input name="key" data-i18n-placeholder="admin.keyPlaceholder" placeholder="ti" required></label>
+          <label><span data-i18n="admin.careerNameLabel">Nombre</span><input name="name" required></label>
+          <label><span data-i18n="admin.careerDescLabel">Descripcion</span><textarea name="desc" required></textarea></label>
+          <label><span data-i18n="admin.careerColorLabel">Color</span><input name="color" type="color" value="#00d4ff"></label>
+          <button class="submit-btn" type="submit" data-i18n="admin.saveCareer">Guardar carrera</button>
         </form>
         <section class="admin-card">
-          <h2>Carreras registradas</h2>
+          <h2 data-i18n="admin.viewRegistered">Carreras registradas</h2>
           <div class="admin-list" id="careerList"></div>
         </section>
       </div>
@@ -87,7 +87,7 @@
 
     <section class="admin-view" id="messagesView">
       <section class="admin-card">
-        <h2>Mensajes de contacto</h2>
+        <h2 data-i18n="admin.messageTitle">Mensajes de contacto</h2>
         <div class="admin-list" id="messageList"></div>
       </section>
     </section>
@@ -95,34 +95,34 @@
     <section class="admin-view" id="usersView">
       <div class="admin-grid">
         <form class="admin-card editor-form" id="userForm">
-          <h2>Gestion de usuarios</h2>
+          <h2 data-i18n="admin.usersTitle">Gestion de usuarios</h2>
           <input type="hidden" name="id">
-          <label>Nombre<input name="name" required></label>
-          <label>Correo<input name="email" type="email" required></label>
-          <label>Rol
+          <label><span data-i18n="admin.userNameLabel">Nombre</span><input name="name" required></label>
+          <label><span data-i18n="admin.userEmailLabel">Correo</span><input name="email" type="email" required></label>
+          <label><span data-i18n="admin.userRoleLabel">Rol</span>
             <select name="role" required>
-              <option value="user">Usuario</option>
-              <option value="admin">Administrador</option>
+              <option value="user" data-i18n="admin.userRoleUser">Usuario</option>
+              <option value="admin" data-i18n="admin.userRoleAdmin">Administrador</option>
             </select>
           </label>
-          <label>Contrasena local<input name="password" type="password" data-i18n-placeholder="admin.passwordPlaceholder" placeholder="Solo para modo local"></label>
+          <label><span data-i18n="admin.localPasswordLabel">Contrasena local</span><input name="password" type="password" data-i18n-placeholder="admin.passwordPlaceholder" placeholder="Solo para modo local"></label>
           <div class="form-actions">
-            <button class="submit-btn" type="submit">Guardar usuario</button>
-            <button class="btn-secondary" id="clearUserForm" type="button">Limpiar</button>
+            <button class="submit-btn" type="submit" data-i18n="admin.saveUser">Guardar usuario</button>
+            <button class="btn-secondary" id="clearUserForm" type="button" data-i18n="admin.clear">Limpiar</button>
           </div>
           <p class="form-note" id="userStatus"></p>
         </form>
 
         <section class="admin-card">
           <div class="list-toolbar">
-            <h2>Usuarios registrados</h2>
+            <h2 data-i18n="admin.registeredUsers">Usuarios registrados</h2>
             <div class="form-row">
-              <label>Buscar<input id="userSearch" data-i18n-placeholder="admin.userSearchPlaceholder" placeholder="Nombre o correo"></label>
-              <label>Rol
+              <label><span data-i18n="admin.search">Buscar</span><input id="userSearch" data-i18n-placeholder="admin.userSearchPlaceholder" placeholder="Nombre o correo"></label>
+              <label><span data-i18n="admin.userRoleLabel">Rol</span>
                 <select id="userRoleFilter">
-                  <option value="all">Todos</option>
-                  <option value="admin">Administradores</option>
-                  <option value="user">Usuarios</option>
+                  <option value="all" data-i18n="admin.filterAll">Todos</option>
+                  <option value="admin" data-i18n="admin.filterAdmins">Administradores</option>
+                  <option value="user" data-i18n="admin.filterUsers">Usuarios</option>
                 </select>
               </label>
             </div>
@@ -134,7 +134,7 @@
 
     <section class="admin-view" id="reviewsView">
       <section class="admin-card">
-        <h2>Reseñas de usuarios</h2>
+        <h2 data-i18n="reviews.title">Reseñas de usuarios</h2>
         <div class="admin-list" id="reviewList"></div>
       </section>
     </section>
@@ -143,17 +143,17 @@
   <div class="drawer-overlay" id="replyDrawerOverlay" aria-hidden="true"></div>
   <aside class="reply-drawer" id="replyDrawer" aria-hidden="true">
     <div class="reply-drawer-header">
-      <h3>Responder mensaje</h3>
+      <h3 data-i18n="admin.replyMessageTitle">Responder mensaje</h3>
       <button class="drawer-close" id="replyDrawerClose" type="button" aria-label="Cerrar">✕</button>
     </div>
     <form class="reply-drawer-form" id="replyDrawerForm">
       <input type="hidden" id="replyDrawerMessageId">
       <p class="reply-drawer-subject" id="replyDrawerSubject"></p>
-      <label>Responder a <strong id="replyDrawerRecipient"></strong></label>
-      <textarea id="replyDrawerText" placeholder="Escribe tu respuesta..." required></textarea>
+      <label><span data-i18n="admin.replyToLabel">Responder a</span> <strong id="replyDrawerRecipient"></strong></label>
+      <textarea id="replyDrawerText" data-i18n-placeholder="admin.writeReplyPlaceholder" placeholder="Escribe tu respuesta..." required></textarea>
       <div class="reply-drawer-actions">
-        <button class="submit-btn" type="submit">Enviar respuesta</button>
-        <button class="btn-secondary" id="replyDrawerCancel" type="button">Cancelar</button>
+        <button class="submit-btn" type="submit" data-i18n="admin.sendReplyButton">Enviar respuesta</button>
+        <button class="btn-secondary" id="replyDrawerCancel" type="button" data-i18n="admin.cancelButton">Cancelar</button>
       </div>
     </form>
   </aside>
