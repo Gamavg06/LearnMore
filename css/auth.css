@@ -26,8 +26,22 @@
 }
 
 .auth-header .logo-img {
-  height: 72px;
+  height: 56px;
   width: auto;
+}
+
+.auth-header .logo-text {
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 2.2rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-header .logo-img:only-child {
+  height: 72px;
 }
 
 .auth-header #languageToggle {

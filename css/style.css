@@ -65,13 +65,24 @@ button, input, textarea, select { font: inherit; }
 .logo {
   display: inline-flex;
   align-items: center;
+  gap: 12px;
   text-decoration: none;
 }
 
 .logo-img {
-  height: 44px;
+  height: 48px;
   width: auto;
   object-fit: contain;
+}
+
+.logo-text {
+  font-family: "Syne", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .nav-links {
