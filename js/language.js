@@ -451,6 +451,12 @@ export function translate(key, lang = getLanguage()) {
   return dictionary[lang][key] || key;
 }
 
+const TRANSLATION_ENDPOINTS = [
+  "https://translate.argosopentech.com/translate",
+  "https://translate.terraprint.co/translate",
+  "https://lt.vern.cc/translate"
+];
+
 export async function translateDynamic(text, targetLang = getLanguage()) {
   if (!text) return text;
   
@@ -462,21 +468,34 @@ export async function translateDynamic(text, targetLang = getLanguage()) {
     return text;
   }
 
-  // Try MyMemory translation API fallback for English
-  try {
-    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=es|en`);
-    const data = await res.json();
-    if (data.responseData && data.responseData.translatedText) {
-      const translated = data.responseData.translatedText;
-      // If the API returns a warning message due to usage limits, fallback to the original text
-      if (translated && !translated.toUpperCase().includes("MYMEMORY WARNING")) {
-        if (!dictionary[targetLang]) dictionary[targetLang] = {};
-        dictionary[targetLang][text] = translated;
-        return translated;
+  // Loop through public LibreTranslate instances with failover
+  for (const endpoint of TRANSLATION_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: JSON.stringify({
+          q: text,
+          source: "es",
+          target: "en",
+          format: "text"
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.translatedText) {
+          const translated = data.translatedText;
+          if (!dictionary[targetLang]) dictionary[targetLang] = {};
+          dictionary[targetLang][text] = translated;
+          return translated;
+        }
       }
+    } catch (error) {
+      console.warn(`Translation failed for endpoint ${endpoint}:`, error);
     }
-  } catch (error) {
-    console.warn("MyMemory translation failed:", error);
   }
 
   return text;
