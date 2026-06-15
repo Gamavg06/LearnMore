@@ -467,9 +467,13 @@ export async function translateDynamic(text, targetLang = getLanguage()) {
     const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=es|en`);
     const data = await res.json();
     if (data.responseData && data.responseData.translatedText) {
-      if (!dictionary[targetLang]) dictionary[targetLang] = {};
-      dictionary[targetLang][text] = data.responseData.translatedText;
-      return data.responseData.translatedText;
+      const translated = data.responseData.translatedText;
+      // If the API returns a warning message due to usage limits, fallback to the original text
+      if (translated && !translated.toUpperCase().includes("MYMEMORY WARNING")) {
+        if (!dictionary[targetLang]) dictionary[targetLang] = {};
+        dictionary[targetLang][text] = translated;
+        return translated;
+      }
     }
   } catch (error) {
     console.warn("MyMemory translation failed:", error);

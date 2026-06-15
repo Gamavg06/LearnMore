@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reseñas | LEARNMORE</title>
+  
+  <link rel="icon" href="assets/icons/Icono.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="logo" href="index.html#inicio"><img src="assets/icons/LearnMore.png" alt="LEARNMORE" class="logo-img"><span class="logo-text">LEARNMORE</span></a>
+    <button class="icon-btn menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu">Menu</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html#inicio" data-i18n="nav.home">Inicio</a></li>
+      <li><a href="index.html#guias" data-i18n="nav.guides">Guias</a></li>
+      <li><a href="index.html#carreras" data-i18n="nav.careers">Carreras</a></li>
+      <li><a href="contact.html" data-i18n="nav.contact">Contacto</a></li>
+      <li><a href="login.html" id="loginNavLink" data-i18n="nav.login">Entrar</a></li>
+      <li><a href="profile.html" id="profileNavLink" data-i18n="nav.profile" hidden>Perfil</a></li>
+      <li><a href="reviews.html" class="active" data-i18n="nav.reviews">Reseñas</a></li>
+      <li><a class="nav-cta" href="admin.html" id="adminNavLink" data-i18n="nav.admin" hidden>Admin</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Cambiar tema">T</button>
+      <button class="chip-btn" id="languageToggle" type="button">ES</button>
+    </div>
+  </nav>
+
+  <main style="padding-top: 80px;">
+    <!-- ===== SECCIÓN DE RESEÑAS ===== -->
+    <section id="resenas" class="section">
+      <div class="section-header">
+        <span class="eyebrow" data-i18n="reviews.badge">Opiniones de la comunidad</span>
+        <h2 data-i18n="reviews.title">Reseñas de usuarios</h2>
+        <p data-i18n="reviews.copy">Comparte tu experiencia con LEARNMORE y lee lo que otros estudiantes opinan.</p>
+      </div>
+
+      <div class="resenas-layout">
+        <div class="resena-form">
+          <h3 data-i18n="reviews.formTitle">Escribe tu reseña</h3>
+          <input type="text" id="nameInput" data-i18n-placeholder="reviews.namePlaceholder" placeholder="Tu nombre" />
+          <div class="stars-container" id="starContainer">
+            <span data-i18n="reviews.rating">Calificación:</span>
+            <button class="star" data-val="1" type="button" aria-label="1 estrella">☆</button>
+            <button class="star" data-val="2" type="button" aria-label="2 estrellas">☆</button>
+            <button class="star" data-val="3" type="button" aria-label="3 estrellas">☆</button>
+            <button class="star" data-val="4" type="button" aria-label="4 estrellas">☆</button>
+            <button class="star" data-val="5" type="button" aria-label="5 estrellas">☆</button>
+          </div>
+          <textarea id="commentInput" data-i18n-placeholder="reviews.commentPlaceholder" placeholder="Cuéntanos tu experiencia..." rows="4"></textarea>
+          <button id="submitBtn" class="submit-btn" type="button" data-i18n="reviews.submit">Publicar reseña</button>
+          <p id="errorMsg" class="error-msg" data-i18n="reviews.error"></p>
+        </div>
+
+        <div id="reviewsList"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="logo" href="index.html#inicio" style="pointer-events: none;"><img src="assets/icons/LearnMore.png" alt="LEARNMORE" class="logo-img"><span class="logo-text">LEARNMORE</span></a>
+    <span data-i18n="footer.copy">Sistema de Guias de Aprendizaje. Plataforma academica administrable.</span>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/resenas.js"></script>
+</body>
+</html>

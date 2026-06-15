@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacto | LEARNMORE</title>
+  
+  <link rel="icon" href="assets/icons/Icono.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="logo" href="index.html#inicio"><img src="assets/icons/LearnMore.png" alt="LEARNMORE" class="logo-img"><span class="logo-text">LEARNMORE</span></a>
+    <button class="icon-btn menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu">Menu</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="index.html#inicio" data-i18n="nav.home">Inicio</a></li>
+      <li><a href="index.html#guias" data-i18n="nav.guides">Guias</a></li>
+      <li><a href="index.html#carreras" data-i18n="nav.careers">Carreras</a></li>
+      <li><a href="contact.html" class="active" data-i18n="nav.contact">Contacto</a></li>
+      <li><a href="login.html" id="loginNavLink" data-i18n="nav.login">Entrar</a></li>
+      <li><a href="profile.html" id="profileNavLink" data-i18n="nav.profile" hidden>Perfil</a></li>
+      <li><a href="reviews.html" data-i18n="nav.reviews">Reseñas</a></li>
+      <li><a class="nav-cta" href="admin.html" id="adminNavLink" data-i18n="nav.admin" hidden>Admin</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Cambiar tema">T</button>
+      <button class="chip-btn" id="languageToggle" type="button">ES</button>
+    </div>
+  </nav>
+
+  <main style="padding-top: 80px;">
+    <section id="contacto" class="section">
+      <div class="section-header">
+        <span class="eyebrow" data-i18n="contact.badge">Soporte academico</span>
+        <h2 data-i18n="contact.title">Contactanos</h2>
+        <p data-i18n="contact.copy">Envia dudas, reportes o propuestas de material. El panel administrativo mostrara estos mensajes.</p>
+      </div>
+      <div class="contact-layout">
+        <aside class="contact-info">
+          <h3 data-i18n="contact.asideTitle">Estamos para ayudarte</h3>
+          <p data-i18n="contact.asideCopy">Incluye tu carrera y semestre para que el equipo pueda responder con mas precision.</p>
+          <span>learnmore@universidad.edu.mx</span>
+          <span>Puebla, Mexico</span>
+        </aside>
+        <form class="contact-form" id="contactForm">
+          <div class="form-row">
+            <label><span data-i18n="form.name">Nombre</span><input name="name" required></label>
+            <label><span data-i18n="form.email">Correo</span><input name="email" type="email" required></label>
+          </div>
+          <div class="form-row">
+            <label><span data-i18n="form.career">Carrera</span><select name="career" id="contactCareer"></select></label>
+            <label><span data-i18n="form.subject">Asunto</span><input name="subject" required></label>
+          </div>
+          <label><span data-i18n="form.message">Mensaje</span><textarea name="message" required></textarea></label>
+          <button class="submit-btn" type="submit" data-i18n="form.send">Enviar mensaje</button>
+          <p class="form-note" id="contactStatus"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <a class="logo" href="index.html#inicio" style="pointer-events: none;"><img src="assets/icons/LearnMore.png" alt="LEARNMORE" class="logo-img"><span class="logo-text">LEARNMORE</span></a>
+    <span data-i18n="footer.copy">Sistema de Guias de Aprendizaje. Plataforma academica administrable.</span>
+  </footer>
+
+  <script>
+    window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__ = "https://brjywswhmqwokqemaosr.supabase.co/functions/v1/contact-email";
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

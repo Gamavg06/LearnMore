@@ -24,16 +24,20 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   });
 
-  document.getElementById('starContainer')
-    .addEventListener('mouseleave', function () {
+  const starContainer = document.getElementById('starContainer');
+  if (starContainer) {
+    starContainer.addEventListener('mouseleave', function () {
       updateStars(starBtns);
     });
+  }
 
-  document.getElementById('submitBtn')
-    .addEventListener('click', function (e) {
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', function (e) {
       e.preventDefault();
       submitReview(starBtns);
     });
+  }
 });
 
 function highlightStars(btns, n) {
