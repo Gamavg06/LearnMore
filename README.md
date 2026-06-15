@@ -1,207 +1,493 @@
-# LEARNMORE - Sistema de Guias de Aprendizaje
+# LEARNMORE - Sistema de Guías de Aprendizaje
 
-LEARNMORE es una plataforma web academica para gestionar guias de aprendizaje, carreras, semestres, usuarios y mensajes de contacto.
+LEARNMORE es una plataforma web académica (frontend estático + Supabase + funciones serverless) para gestionar:
+- **Guías** (recursos por carrera y semestre)
+- **Carreras**
+- **Mensajes de contacto**
+- **Usuarios** y roles (admin/user)
+- **Reseñas** (opiniones 1–5 estrellas)
 
-## Estructura
+Este README funciona como **manual técnico y base para documentación** (manuales técnicos/de usuario y guía de estilos) usando como fuente el código del repositorio.
+
+---
+
+## 1) Estructura del proyecto
 
 ```text
 Sistema de Guia/
-  index.html           # Sitio publico principal
-  login.html           # Pagina de inicio de sesion
-  register.html        # Pagina de registro de usuarios
+  index.html           # Sitio público principal
+  login.html           # Pantalla de inicio de sesión
+  register.html        # Registro
   admin.html           # Panel administrativo
   profile.html         # Perfil de usuario
   css/
-    style.css          # Estilos principales (publico)
-    admin.css          # Estilos del panel administrativo
-    auth.css           # Estilos de autenticacion
-    profile.css        # Estilos del perfil
-    responsive.css     # Estilos responsive
+    style.css          # Estilos público
+    admin.css          # Estilos admin
+    auth.css           # Estilos autenticación
+    profile.css        # Estilos perfil
+    responsive.css
+    resenas.css        # Estilos reseñas (según archivo existente)
   js/
-    main.js            # Logica del sitio publico
-    firebase.js        # (No usado en el flujo Supabase; se conserva para modo local/legacy)
-    auth.js            # Registro, login y recuperacion
-    admin.js           # Panel administrativo completo
-    guides.js          # Operaciones de datos (CRUD)
-    profile.js         # Gestion del perfil de usuario
-    theme.js           # Toggle modo claro/oscuro
-    language.js        # Internacionalizacion ES/EN
-    migrar.js          # Migracion automatica de datos
-    resenas.js         # Sistema de reseñas y calificaciones
-
-  assets/
-    images/            # Imagenes del proyecto
-    icons/             # Iconos
-    pdfs/              # Recursos PDF
+    main.js            # UI pública: filtros, render de guías, modal de detalle, contacto
+    auth.js            # Registro/login/reset + autofill de matrícula
+    admin.js           # UI admin: dashboard, CRUD guías/carreras/mensajes/usuarios, reseñas
+    guides.js          # Capa de datos: fallback localStorage + Supabase CRUD + realtime
+    supabase.js        # Cliente Supabase + “shims” tipo Firestore para compatibilidad
+    profile.js         # UI perfil: edición, foto, mensajes/reseñas del usuario
+    resenas.js         # UI reseñas: estrellas + envío + render
+    language.js        # i18n ES/EN con diccionario
+    theme.js           # tema claro/oscuro persistente
+    migrar.js          # Migración a Supabase inicial (careers/guides)
+  functions/
+    index.js           # Deno serverless: envío de correos (Resend)
 ```
 
-## Funciones implementadas
+---
 
-### Sitio publico (Supabase)
-- Guias dinamicas con filtros por carrera y semestre
-- Estadisticas visibles (conteo de guias, carreras, semestres)
-- Formulario de contacto
-- Navegacion responsive con menu movil
-- Boton de acceso al admin (solo para administradores)
+## 2) Metodología/arquitectura utilizada (detectada en el código)
 
-### Panel administrativo (Supabase)
-- **Dashboard**: Metricas en tiempo real y actividad reciente
-- **Guias**: CRUD completo (titulo, descripcion, detalle, carrera, semestre, temas, PDF)
-- **Carreras**: CRUD con clave, nombre, descripcion y color identitario
-- **Mensajes**: Lista de mensajes de contacto desde la tabla `messages` (marcado como revisado con `status`)
-- **Usuarios**: Busqueda, filtro por rol, edicion y eliminacion
-- **Tema**: Toggle modo claro/oscuro sincronizado
-- **Idioma**: Cambio entre Español/Inglés sin recarga
+- **Arquitectura modular por capas** sin framework MVC:
+  - UI por páginas y módulos JS: cada vista importa utilidades y **renderiza con HTML strings**.
+  - Capa de datos/negocio: `js/guides.js` centraliza:
+    - CRUD/acciones (`saveGuide`, `saveCareer`, `saveMessage`, `saveUser`, `saveReview`, etc.)
+    - suscripción realtime (`subscribe*`)
+    - fallback local (`localStorage` + evento `learnmore:local-change`).
+  - Infra/SDK: `js/supabase.js` encapsula el cliente y ofrece shims con firma “Firestore-like”.
+  - Backend serverless: `functions/index.js` para enviar emails con Resend.
 
-### Autenticacion (Supabase + modo local)
-- Registro con nombre, carrera, telefono, matricula y semestre
-- Inicio de sesion con validacion de credenciales
-- Recuperacion de contrasena
-- Cierre de sesion
-- Interceptor de administrador local (admin@learnmore.local)
+- **Estrategia “Real-time con fallback local” (sync-ready):**
+  - Si `supabaseReady === true` el sistema lee/suscribe desde Supabase.
+  - Si una tabla no existe o hay error: se usa `localStorage` silenciosamente o se evita spam de errores (ver manejo de tablas opcionales/realtime en `guides.js`).
 
-### Email de contacto (Gmail con App Password)
-- Se utiliza una Cloud Function para enviar correos al admin con **App Password (SMTP)**
-- Los mensajes del formulario se guardan en Supabase (tabla `messages`) para que el admin los vea en el panel
+- **Patrón funcional (ES Modules):** exportación de funciones y constantes (sin clases).
 
-### Perfil de usuario
-- Edicion de informacion personal
-- Cambio de foto de perfil desde dispositivo
-- Cierre de sesion
-- Borrado de cuenta/perfil
+---
 
-### Reseñas
-- Sistema de calificacion con estrellas (1-5)
-- Formulario para enviar opiniones
-- Almacenamiento local en `localStorage`
-- Vista de reseñas publicadas con avatar
+## 3) Modelo de datos (Supabase) y estados esperados
 
+> Nota: el código asume que las tablas **existen**; aun así `guides.js` tiene lógica defensiva para tablas opcionales.
 
-## Archivos JavaScript
+### 3.1 Tablas base (consultadas/escritas)
 
-| Archivo | Funcion |
-|---------|---------|
-| `main.js` | Logica del sitio publico, renderizado de guias y carreras |
-| `firebase.js` | Configuracion de Firebase, funciones de auth/firestore/storage |
-| `auth.js` | Registro, login, recuperacion de contrasena |
-| `admin.js` | Panel administrativo: dashboard, CRUD guias/carreras/mensajes/usuarios |
-| `guides.js` | Operaciones de datos: subscribe, save, delete, local storage fallback |
-| `profile.js` | Edicion de perfil, foto, logout, borrado de cuenta |
-| `theme.js` | Persistencia de tema claro/oscuro en localStorage |
-| `language.js` | Sistema i18n con diccionario ES/EN |
-| `migrar.js` | Migracion automatica de datos de localStorage a Firebase |
-| `resenas.js` | Sistema de reseñas: calificacion, envio, renderizado |
+1) **`guides`**
+- Clave: `id` (usada en UI como `guide.id`)
+- Campos esperados en código:
+  - `title`, `desc`, `detail`
+  - `career` (key/id de carrera)
+  - `sem` (número)
+  - `topics` (array de strings)
+  - `fileUrl` (URL pública del recurso)
+  - `created_at`, `updated_at`
 
-## Internacionalizacion (Idioma)
+2) **`careers`**
+- Clave: `id` (en admin se fuerza a `data.key || data.id` normalizado)
+- Campos:
+  - `id`, `name`, `description`, `desc` (ambas variantes se mapean en `saveCareer`)
+  - `color`
+  - `created_at`, `updated_at`
 
-Soporte completo para dual idioma ES/EN:
+3) **`messages`** (contacto)
+- Campos usados:
+  - `id`, `name`, `email`, `subject`, `message`
+  - `reply`, `replied_by`, `replied_at`
+  - `status`
+  - `created_at`, `updated_at`
 
-**Archivos clave:**
-- `js/language.js` - Sistema de traduccion con diccionario
-- Atributo `data-i18n="clave"` en elementos HTML
+- **Estados (`messages.status`)** (ver `admin.js`):
+  - `nuevo`
+  - `leido`
+  - `revisado`
+  - `respondido`
 
-**Claves disponibles:**
-- `nav.*`: Navegacion (home, guides, careers, contact, login, admin, profile, reviews)
-- `reviews.*`: Reseñas (badge, title, copy, formTitle, namePlaceholder, rating, etc.)
-- `hero.*`: Hero section (badge, title, copy, primary, secondary)
-- `stats.*`: Estadisticas (guides, careers, semesters)
-- `careers.*`: Carreras (badge, title, copy)
-- `guides.*`: Guias (badge, title, copy, empty)
-- `contact.*`: Contacto (badge, title, copy, asideTitle, asideCopy)
-- `form.*`: Formularios (name, email, career, subject, message, send)
-- `auth.*`: Autenticacion (loginBadge, loginTitle, password, etc.)
-- `profile.*`: Perfil (badge, title, phone, semester, studentId, bio, etc.)
+4) **`gmailMessages`**
+- Tabla tratada como opcional en realtime (lista de mensajes sincronizados desde Gmail/función no incluida en este repositorio).
+- UI admin (`admin.js`) la mezcla con `messages`.
 
-**Uso:**
-```js
-import { initLanguage } from "./language.js";
-initLanguage(); // Inicializa el sistema
-```
+5) **`users`**
+- Campos usados:
+  - `id` (en modo admin real es UUID desde Supabase auth)
+  - `email`, `name`, `role`
+  - `career`, `sem`/`semester`, `phone`, `studentId`, `bio`
+  - `password` existe solo en modo local (en supabaseReady: se elimina antes de guardar)
 
-## Tema (Modo claro/oscuro)
+6) **`activity`**
+- Registro de eventos del sistema (dashboard admin).
+- Campos usados:
+  - `type`, `text`, `created_at`, `updated_at`
 
-Sistema de tema persistente usando CSS custom properties:
+7) **`reviews`**
+- Campos usados:
+  - `id`, `name`, `comment` (en `resenas.js`) o `message` (en `admin.js`), `stars`
+  - `reply`, `replied_by`, `replied_at`
+  - `status` (en admin)
+  - `email` en perfil (filtrado por email)
+  - `created_at`, `updated_at`
 
-**Archivos clave:**
-- `js/theme.js` - Persistencia en localStorage
-- `css/style.css` - Variables CSS en `:root` y `[data-theme="light"]`
+---
 
-**Variables principales:**
-```css
---bg, --bg-2, --surface, --surface-strong, --border, --text, --muted
---accent, --accent-2, --accent-3, --danger
---accent-border, --accent-border-soft, --danger-border, --danger-surface
---shadow
-```
+## 4) Modelo de datos (Modo Local / localStorage)
 
-**Uso:**
-```js
-import { initTheme } from "./theme.js";
-initTheme(); // Configura toggle automatico
-```
+En `js/guides.js` se definen las keys:
 
-## Paleta de colores
+### 4.1 Keys
+- `learnmore.guides`
+- `learnmore.careers`
+- `learnmore.messages`
+- `learnmore.users`
+- `learnmore.activity`
+- `learnmore.reviews`
 
-```css
-:root {
-  --bg: #090d18;
-  --bg-2: #101827;
-  --surface: rgba(255, 255, 255, 0.055);
-  --surface-strong: rgba(255, 255, 255, 0.09);
-  --border: rgba(255, 255, 255, 0.11);
-  --text: #f4f7fb;
-  --muted: #9aa7bd;
-  --accent: #00d4ff;
-  --accent-2: #7c3aed;
-  --accent-3: #10b981;
-  --danger: #fb7185;
-  --accent-border: rgba(0, 212, 255, 0.45);
-  --shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
-}
+### 4.2 Inicialización de seed
+- `ensureLocalSeed()` inserta defaults si no existen:
+  - `careers`: usa `defaultCareers` (IDs `01`, `02`, `03`)
+  - `guides`: default vacío
+  - `messages`: default `[]`
+  - `users`: default `[]`
+  - `activity`: default `[]`
 
-[data-theme="light"] {
-  --bg: #f6f8fc;
-  --bg-2: #eaf0f8;
-  --surface: rgba(255, 255, 255, 0.82);
-  --surface-strong: #ffffff;
-  --border: rgba(16, 24, 40, 0.12);
-  --text: #111827;
-  --muted: #5f6c80;
-  --shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
-}
-```
+### 4.3 Credenciales de prueba (local)
+- Admin local: `admin@learnmore.local` / `admin123`
 
-## Modo local
+---
 
-El sistema funciona sin configurar Firebase usando `localStorage`. Credenciales de prueba:
+## 5) Supabase: contratos, realtime y shims
 
-```text
-Correo: admin@learnmore.local
-Contrasena: admin123
-```
+### 5.1 Cliente Supabase
+En `js/supabase.js`:
+- `SUPABASE_URL`
+- `SUPABASE_KEY`
+- `export const supabase = createClient(...)`
+- `export const supabaseReady = true`
 
-## Configuración Supabase
+### 5.2 “Shims” Firestore-like
+`supabase.js` expone funciones compatibles para no romper `guides.js`/resto del código (ej: `collection`, `doc`, `addDoc`, `setDoc`, `deleteDoc`, `getDoc`, `onSnapshot`).
 
-- Crea (o migra) la base de datos en Supabase.
-- Asegúrate de que existan las tablas que usa el proyecto (no se crean automáticamente).
+### 5.3 Storage shims
+- `ref`, `uploadBytes`, `getDownloadURL`
+- Nota: el bucket en el shim aparece como **`files`**.
+- En `js/guides.js` el bucket usado para guías es **`guides`**.
 
-Tablas requeridas:
-- `guides`
-- `careers`
-- `messages` (mensajes de contacto)
-- `users`
-- `activity`
+### 5.4 Realtime en `js/guides.js`
+- `subscribeSupabaseTable(tableName, fallback, callback)`:
+  - carga inicial con `.select('*')` y orden por:
+    - `created_at` si la tabla está en lista `tablesWithCreatedAt`
+    - si no, por `id`
+  - suscripción `postgres_changes` para `event: '*'`.
 
-## Nota importante
-Para que el sistema funcione correctamente con Supabase, **las tablas deben existir en la base de datos** antes de usar la app. Una vez creadas, el sitio y el panel admin leerán/escribirán desde esas tablas.
+- **Tablas opcionales** (sin existencia garantizada):
+  - `gmailMessages`, `reviews`
+  - comportamiento: intenta fetch inicial; si falla, usa `fallback` silenciosamente.
 
+---
 
+## 6) Backend serverless (functions)
 
-## Ejecutar
+### 6.1 Endpoint de correo
+En `functions/index.js`:
+- Usa `deno.land/std/http/server.ts`.
+- Implementa CORS con headers:
+  - `Access-Control-Allow-Origin: *`
+  - `Access-Control-Allow-Headers: authorization, x-client-info, apikey, content-type`
+
+- Método:
+  - `POST` (y `OPTIONS` para preflight)
+
+- Payload esperado (JSON):
+  - `name`, `email`, `subject`, `message`
+
+- Envío con Resend (en código):
+  - `Authorization: Bearer ${Deno.env.get("RESEND_API_KEY")}`
+  - `to: ["brayanscompany@gmail.com"]`
+
+---
+
+## 7) Flujos por módulo (UI)
+
+### 7.1 Sitio público (`js/main.js`)
+**Responsabilidad:** filtros, render de guías/carreras, modal, estadísticas y contacto.
+
+- **Inicialización:**
+  - `initTheme()`, `initLanguage()`, `initSessionUi()`, `renderCareers()` y `renderCareerOptions()`.
+
+- **Suscripción de datos (realtime):**
+  - `subscribeCareers` → actualiza `careers` y re-render de filtros/guias/dashboard
+  - `subscribeGuides` → actualiza `guides`, render de stats/semestres/guias
+
+- **Filtros:**
+  - `activeCareer` por botones con `.filter-tab[data-filter]`
+  - `activeSemester` por `#semesterFilter`
+
+- **Render principal de guías (`renderGuides`)**
+  - filtra por:
+    - carrera: `guide.career === activeCareer` o `all`
+    - semestre: `String(guide.sem) === String(activeSemester)` o `all`
+
+- **Modal de guía (`openGuide`)**
+  - inyecta:
+    - `title`, `career/sem`, `detail || desc`
+    - `topics` como chips
+    - link `guide.fileUrl` si existe
+
+- **Contacto**
+  - `#contactForm` → `saveMessage(data)` (en `guides.js`)
+
+- **UI sesión/admin (`initSessionUi`)**
+  - Si Supabase está activo: `onAuthStateChanged` + carga perfil `users` para decidir admin.
+  - Si Supabase no está listo: usa `getLocalCurrentUser()`.
+
+### 7.2 Autenticación (`js/auth.js`)
+**Registro (`#registerForm`)**
+- Valida:
+  - `email`, `password`
+  - matrícula con formato regex `^(\d{2})-(\d{2})-(\d{3})$` (a través de `getMatriculaInfo` en `guides.js`)
+- Construye `userProfile`:
+  - `name`, `career`, `phone`, `studentId`, `semester`, `email`, `role: "user"`
+- Si `supabaseReady`:
+  - `createUserWithEmailAndPassword(auth, email, password)`
+  - guarda en `users` con `saveUser` y `id: authData.user.id`.
+- Si modo local:
+  - guarda con `saveLocalUser` usando `id=email` y `password`.
+- En ambos casos: `setLocalSession({ email, name, role })` y redirección a `index.html`.
+
+**Login (`#loginForm`)**
+- Valida `email` y `password`.
+- Caso admin local (fallback):
+  - `admin@learnmore.local` / `admin123` → guarda usuario local admin y manda a `admin.html`.
+- Si Supabase:
+  - `signInWithEmailAndPassword`
+  - carga rol desde `users` (perfil) y redirecciona a `admin.html` si es admin.
+- Si local:
+  - busca en `localUsers()` por `email` y `password`.
+
+**Reset contraseña (`#resetPassword`)**
+- Si Supabase: `sendPasswordResetEmail(auth, email)`.
+- Si local: mensaje indicativo; no hay reset real.
+
+**Autofill matrícula**
+- `initMatriculaAutofill()` rellena `career` y `semester` cuando `studentId` cambia/blur.
+
+### 7.3 Admin (`js/admin.js`)
+**Inicialización**
+- `initTheme()`, `initLanguage()`, `renderCareerSelect()`, `renderCareers()`.
+
+**Suscripciones**
+- `subscribeCareers`, `subscribeGuides`, `subscribeMessages`, `subscribeGmailMessages`, `subscribeUsers`, `subscribeActivity`, `subscribeReviews`.
+
+**Dashboard (`renderDashboard`)**
+- Métricas:
+  - `guides.length`, `careers.length`, semestres únicos en guías
+  - mensajes totales `contactMessages.length + gmailMessages.length`
+  - `users.length`, `reviews.length`
+  - `Supabase` status: activo/local
+
+**CRUD Guías**
+- `#guideForm` → `saveGuide(data)` (incluye `file` para storage de `guides` bucket)
+- Botones en lista:
+  - `data-edit-guide` → `fillGuide(id)`
+  - `data-delete-guide` → `deleteGuide(id)`
+
+**CRUD Carreras**
+- `#careerForm` → `saveCareer()`
+- `fillCareer()` + botones `edit/delete`.
+
+**Mensajes**
+- Se combinan `messages` + `gmailMessages` y se ordena por fecha.
+- Estados visuales con `statusLabel`:
+  - `nuevo`, `leido`, `revisado`, `respondido`
+- Acciones:
+  - marcar leído → `updateMessageStatus(id, "leido")`
+  - responder → abre drawer y llama `replyToMessage(id, reply, adminName)`.
+
+**Usuarios**
+- Render filtrado por búsqueda/rol.
+- Acciones:
+  - editar → `fillUser(id)`
+  - cambiar rol → `changeUserRole(id, role)` usando `saveUser`
+  - eliminar → `deleteUser(id)`
+
+**Reseñas**
+- Render con botones:
+  - marcar leído → `updateReviewStatus(id,"leido")`
+  - responder → `replyToReviewPrompt` (usa `prompt()`)
+  - eliminar → `deleteReview(id)`
+
+### 7.4 Perfil (`js/profile.js`)
+**Carga del usuario**
+- Si Supabase:
+  - `onAuthStateChanged` y `loadSupabaseProfile(user)`
+- Si local:
+  - `getLocalCurrentUser()`
+
+**Edición perfil** (`#profileForm`)
+- Campos editables: `name`, `career`, `semester`, `studentId`
+- Normalización:
+  - `studentId` → `normalizeMatricula`
+  - sem derivado con `getMatriculaInfo()` si válido
+- Foto perfil:
+  - `#profilePhotoInput` lee archivo y lo convierte a DataURL (`fileToDataUrl`)
+
+**Mensajes del usuario**
+- Supabase: filtra `messages` por `email` y ordena por `created_at desc`.
+- Local: lee `learnmore.messages` y filtra `msg.email === currentUser.email`.
+
+**Reseñas del usuario**
+- Supabase: filtra `reviews` por `email`.
+- Local: lee `learnmore.reviews` y filtra `r.email === currentUser.email`.
+
+**Acciones**
+- logout: `signOut()` (si Supabase) + `clearLocalSession()`
+- borrar cuenta: `deleteUser(currentUser.id)` y/o por email si aplica.
+
+### 7.5 Reseñas públicas (`js/resenas.js`)
+- UI de estrellas:
+  - `.star[data-val]` actualiza `selectedStars` y estados visuales
+- Envío (`submitReview`)
+  - valida `name`, `comment`, `selectedStars`
+  - crea objeto:
+    - `name`, `comment`, `stars`, `created_at`
+  - llama `saveReview(review)`
+
+- Suscripción de reseñas
+  - `subscribeReviews` llama `renderReviews()`.
+
+---
+
+## 8) Capa de datos y negocio (`js/guides.js`)
+
+Esta es la pieza central.
+
+### 8.1 Subscripciones exportadas
+- `subscribeGuides`, `subscribeCareers`
+- `subscribeMessages` (tabla `messages`)
+- `subscribeGmailMessages` (tabla `gmailMessages`)
+- `subscribeUsers` (tabla `users`)
+- `subscribeActivity` (tabla `activity`)
+- `subscribeReviews` (tabla `reviews`)
+
+### 8.2 Normalización
+- `normalizeTopics(value)`:
+  - si viene array, retorna array
+  - si string: separa por comas y hace `trim`
+
+### 8.3 CRUD y acciones (exportaciones)
+- `saveGuide(data)`
+  - payload: `sem: Number(...)`, `topics: normalizeTopics(...)`
+  - si Supabase no listo → `localUpsert(KEYS.guides, payload)`
+  - si trae `file`:
+    - sube a storage bucket **`guides`**
+    - obtiene `fileUrl`
+  - guarda/actualiza en tabla `guides`
+  - registra actividad con `saveActivity({type:"guide"...})`
+
+- `saveCareer(data)`
+  - fuerza `careerId` a normalización:
+    - `String(data.key || data.id || "").trim().toLowerCase()`
+  - upsert lógico: consulta si existe `id` y decide update vs insert
+
+- `saveMessage(data)`
+  - setea `status: "nuevo"` y `created_at`
+  - si Supabase no listo → `localUpsert(KEYS.messages, payload)`
+  - si Supabase activo:
+    - inserta en `messages`
+    - intenta enviar email al admin si está configurado:
+      - `window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__`
+    - retorna `result.id`
+
+- `updateMessageStatus(id, status)` → update en `messages`
+
+- `replyToMessage(id, reply, adminName)`
+  - actualiza `reply`, `replied_by`, `replied_at`, `status: "respondido"`
+  - luego intenta enviar correo de respuesta si existe:
+    - `window.__LEARNMORE_SEND_REPLY_EMAIL_URL__`
+
+- `saveUser(data)`
+  - normaliza:
+    - `email` a lowercase
+    - `role` default "user"
+  - validación UUID:
+    - si `id` no es UUID (ej. modo local admin/email local) → guarda solo localStorage
+  - si Supabase activo y UUID:
+    - limpia campos locales (bio/phone/photoData/password/etc.)
+    - upsert en `users` usando conflicto `onConflict: "id"`
+
+- `deleteGuide / deleteCareer / deleteUser` (con fallback local)
+
+- `saveReview(data)`
+  - si Supabase no listo:
+    - upsert en `localStorage` y registra actividad
+  - si Supabase activo:
+    - inserta en `reviews` con campos `payload`
+
+- `updateReviewStatus / replyToReview / deleteReview`
+
+### 8.4 Actividad (`saveActivity`)
+- Si Supabase no listo → `localUpsert(KEYS.activity, {...})`
+- Si Supabase listo:
+  - inserta en `activity`
+  - silencia errores si tabla no existe (códigos `PGRST116`, `42P01`)
+
+### 8.5 Utilidades académicas (matrícula)
+- `getCuatrimestreFromDate(date)`
+- `getCareerCodeFromName(careerName)` → mapea nombres/strings a `"01"|"02"|"03"`
+- `getCareerNameFromCode(code)`
+- `getCurrentAcademicPeriodIndex(date)`
+- `getMatriculaInfo(value, referenceDate)`
+  - valida regex `^(\d{2})-(\d{2})-(\d{3})$`
+  - calcula `semester` a partir de periodo académico
+
+- `generateMatricula(careerName)`
+  - si Supabase: cuenta usuarios con mismo carrera y cuatrimestre
+  - si local: cuenta en localUsers
+  - retorna `generation-careerCode-consecutive`
+
+---
+
+## 9) Migración automática (`js/migrar.js`)
+
+- `ejecutarMigracionAutomatica()`
+  - corre solo si `supabaseReady`
+  - upsert a Supabase:
+    1) carreras (`careers`) usando `defaultCareers`
+    2) guías (`guides`) usando `defaultGuides`
+
+---
+
+## 10) Guía de estilo (convenciones observadas)
+
+Estas convenciones deben mantenerse en documentación futura:
+
+- **Estados**
+  - `messages.status`: `nuevo`, `leido`, `revisado`, `respondido`
+  - `reviews.status`: `nuevo`, `leido` (y valores que admin renderiza)
+
+- **Formato de matrícula**
+  - `YY-CC-NNN`
+  - Código carrera: `01`, `02`, `03`
+
+- **IDs de carreras**
+  - `defaultCareers` usa `id: "01"|"02"|"03"`
+  - `saveCareer` normaliza a `toLowerCase()` (ojo al documentarlo)
+
+- **Temas e idiomas**
+  - `theme.js` persiste key: `learnmore.theme`
+  - `language.js` persiste key: `learnmore.lang` y usa `data-i18n` + `data-i18n-placeholder`.
+
+- **Fallback local**
+  - usar keys `learnmore.*` definidas en `guides.js`
+  - notificar cambios con evento `learnmore:local-change`.
+
+- **UI**
+  - render con `innerHTML` y handlers con `addEventListener`.
+  - delegación de eventos en contenedores cuando el HTML se reinyecta (ej. admin.js).
+
+---
+
+## 11) Ejecutar localmente
 
 ```bash
 python -m http.server 5500
 ```
 
 Navegador: http://localhost:5500/index.html
+
 

@@ -389,42 +389,57 @@ export async function saveCareer(data) {
   }
 }
 export async function saveMessage(data) {
-  const payload = { ...data, status: "nuevo", created_at: new Date().toISOString() };
+  const isEdit = !!data.id;
+  const payload = { ...data };
+  if (!isEdit) {
+    payload.status = "nuevo";
+    payload.created_at = new Date().toISOString();
+  } else {
+    payload.updated_at = new Date().toISOString();
+  }
 
   if (!supabaseReady) {
     return localUpsert(KEYS.messages, payload);
   }
 
   try {
-    const { data: result, error } = await supabase
-      .from("messages")
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    const fnUrl = (window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__ || "");
-    if (fnUrl) {
-      try {
-        await fetch(fnUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: payload.name,
-            email: payload.email,
-            subject: payload.subject,
-            message: payload.message,
-          }),
-        });
-      } catch (e) {
-        console.warn("No se pudo enviar email al admin:", e);
-      }
+    if (isEdit) {
+      const id = payload.id;
+      delete payload.id;
+      const { error } = await supabase.from("messages").update(payload).eq("id", id);
+      if (error) throw error;
+      return id;
     } else {
-      console.warn("Falta configurar window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__");
-    }
+      const { data: result, error } = await supabase
+        .from("messages")
+        .insert(payload)
+        .select()
+        .single();
 
-    return result.id;
+      if (error) throw error;
+
+      const fnUrl = (window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__ || "");
+      if (fnUrl) {
+        try {
+          await fetch(fnUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: payload.name,
+              email: payload.email,
+              subject: payload.subject,
+              message: payload.message,
+            }),
+          });
+        } catch (e) {
+          console.warn("No se pudo enviar email al admin:", e);
+        }
+      } else {
+        console.warn("Falta configurar window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__");
+      }
+
+      return result.id;
+    }
   } catch (error) {
     console.error("Error saving message:", error);
     throw error;
@@ -617,12 +632,13 @@ export async function deleteUser(id) {
 }
 
 export async function saveReview(data) {
-  const payload = {
-    ...data,
-    status: data.status || "nuevo",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
+  const isEdit = !!data.id;
+  const payload = { ...data };
+  if (!isEdit) {
+    payload.status = data.status || "nuevo";
+    payload.created_at = new Date().toISOString();
+  }
+  payload.updated_at = new Date().toISOString();
 
   if (!supabaseReady) {
     const id = payload.id || localUpsert(KEYS.reviews, payload);
@@ -631,16 +647,24 @@ export async function saveReview(data) {
   }
 
   try {
-    const { data: result, error } = await supabase
-      .from("reviews")
-      .insert(payload)
-      .select()
-      .single();
+    if (isEdit) {
+      const id = payload.id;
+      delete payload.id;
+      const { error } = await supabase.from("reviews").update(payload).eq("id", id);
+      if (error) throw error;
+      return id;
+    } else {
+      const { data: result, error } = await supabase
+        .from("reviews")
+        .insert(payload)
+        .select()
+        .single();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    await saveActivity({ type: "review", text: `Reseña guardada: ${payload.name}` });
-    return result.id;
+      await saveActivity({ type: "review", text: `Reseña guardada: ${payload.name}` });
+      return result.id;
+    }
   } catch (error) {
     console.error("Error saving review:", error);
     throw error;
@@ -705,6 +729,47 @@ export async function deleteReview(id) {
   } catch (error) {
     console.error("Error deleting review:", error);
     throw error;
+  }
+}
+
+export async function deleteMessage(id) {
+  if (!supabaseReady) return localDelete(KEYS.messages, id);
+
+  try {
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) throw error;
+    await saveActivity({ type: "message", text: `Mensaje eliminado: ${id}` });
+    return id;
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    throw error;
+  }
+}
+
+export async function incrementGuideViews(id) {
+  // Read local guides first
+  const localList = readLocal(KEYS.guides, []);
+  const updatedLocal = localList.map((item) =>
+    String(item.id) === String(id) ? { ...item, views: (Number(item.views) || 0) + 1 } : item
+  );
+  writeLocal(KEYS.guides, updatedLocal);
+
+  if (supabaseReady) {
+    try {
+      const { data: guideData } = await supabase
+        .from("guides")
+        .select("views")
+        .eq("id", id)
+        .single();
+
+      const currentViews = guideData ? (Number(guideData.views) || 0) : 0;
+      await supabase
+        .from("guides")
+        .update({ views: currentViews + 1 })
+        .eq("id", id);
+    } catch (error) {
+      console.warn("No se pudo incrementar views en Supabase (puede faltar la columna 'views'):", error);
+    }
   }
 }
 

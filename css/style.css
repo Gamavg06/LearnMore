@@ -275,7 +275,8 @@ button, input, textarea, select { font: inherit; }
   gap: 1rem;
   overflow-x: auto;
   scroll-behavior: smooth;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
   padding: 0.6rem 0.2rem 1rem;
   -ms-overflow-style: none;
   /* hide scrollbar in Firefox when supported */

@@ -57,12 +57,35 @@
       <div class="careers-grid" id="careersGrid"></div>
     </section>
 
+    <!-- SECCIÓN GUÍAS POPULARES -->
+    <section id="guias-populares" class="section">
+      <div class="section-header">
+        <span class="eyebrow" data-i18n="guides.popularBadge">Lo más consultado</span>
+        <h2 data-i18n="guides.popularTitle">Guías más vistas</h2>
+        <p data-i18n="guides.popularCopy">Las guías de aprendizaje más visitadas por la comunidad estudiantil.</p>
+      </div>
+      <div class="guides-grid" id="popularGuidesGrid"></div>
+    </section>
+
     <section id="guias" class="section section-alt">
       <div class="section-header">
         <span class="eyebrow" data-i18n="guides.badge">Material de estudio</span>
         <h2 data-i18n="guides.title">Guias academicas</h2>
         <p data-i18n="guides.copy">Contenido dinamico listo para conectarse con Supabase.</p>
       </div>
+
+      <!-- CAROUSEL DE GUÍAS DESTACADAS -->
+      <div class="carousel-section">
+        <h3 class="carousel-title" data-i18n="guides.featured">Guías destacadas</h3>
+        <div class="carousel">
+          <button class="carousel-btn prev-btn" id="carouselPrev" type="button" aria-label="Anterior">‹</button>
+          <div class="carousel-track" id="carouselTrack">
+            <!-- Render dinámico del carrusel -->
+          </div>
+          <button class="carousel-btn next-btn" id="carouselNext" type="button" aria-label="Siguiente">›</button>
+        </div>
+      </div>
+
       <div class="filters">
         <button class="filter-tab active" data-filter="all" data-i18n="filters.all">Todas</button>
         <select id="semesterFilter" aria-label="Filtrar por semestre">

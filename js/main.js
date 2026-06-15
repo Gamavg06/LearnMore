@@ -1,13 +1,14 @@
 import { initTheme } from "./theme.js";
-import { initLanguage, applyLanguage } from "./language.js";
+import { initLanguage, applyLanguage, translate } from "./language.js";
 import { supabaseReady, supabase, onAuthStateChanged } from "./supabase.js";
-import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession, baseCareerOptions } from "./guides.js";
+import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession, baseCareerOptions, incrementGuideViews } from "./guides.js";
 import { ejecutarMigracionAutomatica } from "./migrar.js";
 
 let guides = [];
 let careers = baseCareerOptions();
 let activeCareer = "all";
 let activeSemester = "all";
+let isUserLoggedIn = false;
 
 // Selectores dinámicos compatibles con tu HTML
 const guidesGrid = document.querySelector("#guidesContainer") || document.querySelector("#guidesGrid");
@@ -51,11 +52,11 @@ subscribeCareers((items) => {
   console.log("Carreras recibidas:", items);
   careers = normalizeCareers(items);
   
-
-
   renderCareers();
   renderCareerOptions();
   renderGuides();
+  renderCarousel();
+  renderPopularGuides();
 });
 
 // ESCUCHADOR DE GUÍAS (SUPABASE / LOCAL)
@@ -66,6 +67,8 @@ subscribeGuides((items) => {
   renderStats();
   renderSemesterOptions();
   renderGuides();
+  renderCarousel();
+  renderPopularGuides();
 });
 
 document.querySelector("#contactForm")?.addEventListener("submit", async (event) => {
@@ -169,9 +172,9 @@ function renderGuides() {
       </div>
       <h3>${guide.title}</h3>
       <p>${guide.desc}</p>
-      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-between; align-items: center; gap: 10px;">
-        <span class="pill">${(guide.topics || []).length} temas</span>
-        <button class="btn-secondary" data-guide="${guide.id}" type="button">Ver guía</button>
+      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
+        <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
       </div>
     </article>
   `).join("");
@@ -186,18 +189,27 @@ function renderGuides() {
 }
 
 function openGuide(id) {
+  if (!isUserLoggedIn) {
+    alert(translate("profile.loginPrompt"));
+    window.location.href = "login.html";
+    return;
+  }
+
   const guide = guides.find((item) => String(item.id) === String(id));
   if (!guide || !modalBody || !modal) return;
+
+  // Incrementar vistas
+  incrementGuideViews(id);
 
   modalBody.innerHTML = `
     <h2>${guide.title}</h2>
     <p class="pill" style="display: inline-block; margin: 10px 0;">${careerName(guide.career)} - Semestre ${guide.sem}</p>
     <p style="margin: 15px 0; line-height: 1.6;">${guide.detail || guide.desc}</p>
-    <h3>Temario</h3>
+    <h3>${translate("nav.home") === "Inicio" ? "Temario" : "Syllabus"}</h3>
     <div class="filters" style="display: flex; flex-wrap: wrap; gap: 5px; margin: 15px 0;">
       ${(guide.topics || []).map((topic) => `<span class="pill">${topic}</span>`).join("")}
     </div>
-    ${guide.fileUrl ? `<p style="margin-top: 20px;"><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">Abrir recurso</a></p>` : ""}
+    ${guide.fileUrl ? `<p style="margin-top: 20px;"><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">${translate("nav.home") === "Inicio" ? "Abrir recurso" : "Open resource"}</a></p>` : ""}
   `;
   modal.showModal();
 }
@@ -239,13 +251,14 @@ function initSessionUi() {
 }
 
 function updateSessionUi(isLoggedIn, isAdmin = false) {
+  isUserLoggedIn = isLoggedIn;
   const loginLink = document.querySelector("#loginNavLink");
   const profileLink = document.querySelector("#profileNavLink");
   const adminLink = document.querySelector("#adminNavLink");
 
   if (loginLink) {
     loginLink.hidden = isLoggedIn;
-    loginLink.textContent = "Entrar";
+    loginLink.textContent = translate("nav.login");
     loginLink.href = "login.html";
   }
   if (profileLink) profileLink.hidden = !isLoggedIn || isAdmin;
@@ -265,4 +278,90 @@ async function getSupabaseUserProfile(userId) {
 
 function normalizeCareers(items) {
   return Array.isArray(items) && items.length ? items : baseCareerOptions();
+}
+
+function renderCarousel() {
+  const track = document.querySelector("#carouselTrack");
+  if (!track) return;
+
+  if (!guides.length) {
+    track.innerHTML = `<p class="empty-state" style="display:block;">${translate("guides.empty")}</p>`;
+    return;
+  }
+
+  track.innerHTML = guides.map((guide) => `
+    <article class="guide-card">
+      <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <span class="pill">${careerName(guide.career)}</span>
+        <span class="pill">Sem. ${guide.sem}</span>
+      </div>
+      <h3>${guide.title}</h3>
+      <p>${guide.desc}</p>
+      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
+        <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
+      </div>
+    </article>
+  `).join("");
+
+  track.querySelectorAll("[data-guide]").forEach((button) => {
+    button.addEventListener("click", () => openGuide(button.dataset.guide));
+  });
+}
+
+function renderPopularGuides() {
+  const grid = document.querySelector("#popularGuidesGrid");
+  if (!grid) return;
+
+  if (!guides.length) {
+    grid.innerHTML = `<p class="empty-state" style="display:block;">${translate("guides.empty")}</p>`;
+    return;
+  }
+
+  const sorted = [...guides].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0));
+  const popular = sorted.slice(0, 4);
+
+  grid.innerHTML = popular.map((guide) => `
+    <article class="guide-card" style="border-left: 4px solid var(--accent-3);">
+      <div class="guide-meta" style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <span class="pill">${careerName(guide.career)}</span>
+        <span class="pill">Sem. ${guide.sem}</span>
+        <span class="pill" style="color: var(--accent); border-color: var(--accent-border-soft); font-weight: bold;">🔥 ${Number(guide.views) || 0}</span>
+      </div>
+      <h3>${guide.title}</h3>
+      <p>${guide.desc}</p>
+      <div class="guide-actions" style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <span class="pill">${(guide.topics || []).length} ${translate("nav.home") === "Inicio" ? "temas" : "topics"}</span>
+        <button class="btn-secondary" data-guide="${guide.id}" type="button">${translate("guides.view")}</button>
+      </div>
+    </article>
+  `).join("");
+
+  grid.querySelectorAll("[data-guide]").forEach((button) => {
+    button.addEventListener("click", () => openGuide(button.dataset.guide));
+  });
+}
+
+// Escuchador de evento de idioma para actualizar las guías dinámicas
+window.addEventListener("learnmore:language-change", () => {
+  renderCareers();
+  renderCareerOptions();
+  renderGuides();
+  renderCarousel();
+  renderPopularGuides();
+  renderStats();
+  renderSemesterOptions();
+});
+
+// Inicialización de desplazamiento del carrusel
+const prevBtn = document.querySelector("#carouselPrev");
+const nextBtn = document.querySelector("#carouselNext");
+const track = document.querySelector("#carouselTrack");
+if (prevBtn && nextBtn && track) {
+  prevBtn.addEventListener("click", () => {
+    track.scrollLeft -= 320;
+  });
+  nextBtn.addEventListener("click", () => {
+    track.scrollLeft += 320;
+  });
 }

@@ -1,5 +1,5 @@
 import { initTheme } from "./theme.js";
-import { initLanguage } from "./language.js";
+import { initLanguage, translate } from "./language.js";
 import {
   supabaseReady,
   supabase,
@@ -16,6 +16,10 @@ import {
   getMatriculaInfo,
   subscribeMessages,
   subscribeReviews,
+  saveMessage,
+  deleteMessage,
+  saveReview,
+  deleteReview,
 } from "./guides.js";
 
 initTheme();
@@ -60,9 +64,8 @@ form?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(form));
   delete data.photoFile;
-  delete data.photoData;
   
-  const editableFields = ['name', 'career', 'semester', 'studentId'];
+  const editableFields = ['name', 'career', 'semester', 'studentId', 'phone', 'bio', 'photoData'];
   const payload = { ...currentUser };
   
   editableFields.forEach(field => {
@@ -77,10 +80,22 @@ form?.addEventListener("submit", async (event) => {
   const matriculaInfo = getMatriculaInfo(payload.studentId);
   if (matriculaInfo.isValid) payload.semester = String(matriculaInfo.semester);
   
+  // Guardar de forma persistente local los campos que no van a la BD
+  localStorage.setItem(`learnmore.profile.${payload.email}`, JSON.stringify({
+    bio: payload.bio || "",
+    phone: payload.phone || "",
+    photoData: payload.photoData || ""
+  }));
+  
   await saveUser(payload);
   currentUser = payload;
   if (!supabaseReady) setLocalSession({ email: payload.email, name: payload.name, role: payload.role });
-  status.textContent = "Perfil guardado correctamente.";
+  
+  // Actualizar UI lateral
+  const sidebarName = document.querySelector("#sidebarProfileName");
+  if (sidebarName) sidebarName.textContent = payload.name || payload.email;
+  
+  status.textContent = translate("nav.home") === "Inicio" ? "Perfil guardado correctamente." : "Profile saved successfully.";
 });
 
 photoInput?.addEventListener("change", async () => {
@@ -88,12 +103,12 @@ photoInput?.addEventListener("change", async () => {
   if (!file) return;
 
   if (!file.type.startsWith("image/")) {
-    status.textContent = "Selecciona un archivo de imagen.";
+    status.textContent = translate("profile.photoTypeError");
     return;
   }
 
   if (file.size > 1024 * 1024) {
-    status.textContent = "La imagen debe pesar menos de 1 MB.";
+    status.textContent = translate("profile.photoSizeError");
     return;
   }
 
@@ -129,7 +144,10 @@ function fillProfile(user) {
   form.bio.value = user.bio || "";
   photoData.value = user.photoData || "";
   setPhotoPreview(user.photoData || "", user.name || user.email);
-  setPhotoPreview(user.photoData || "", user.name || user.email);
+  
+  const sidebarName = document.querySelector("#sidebarProfileName");
+  if (sidebarName) sidebarName.textContent = user.name || user.email;
+
   document.querySelector("#profileSummary").textContent = `${user.email || ""} - ${user.role || "user"}`;
 }
 
@@ -188,10 +206,16 @@ function fileToDataUrl(file) {
 
 async function loadSupabaseProfile(user) {
   const { data, error } = await supabase.from("users").select("*").eq("id", user.id).single();
-  if (error || !data) {
-    return { id: user.id, email: user.email, name: user.email, role: "user" };
+  let localFields = {};
+  try {
+    localFields = JSON.parse(localStorage.getItem(`learnmore.profile.${user.email}`)) || {};
+  } catch (e) {
+    console.warn("Error loading local fields:", e);
   }
-  return { id: user.id, email: user.email, ...data };
+  if (error || !data) {
+    return { id: user.id, email: user.email, name: user.email, role: "user", ...localFields };
+  }
+  return { id: user.id, email: user.email, ...data, ...localFields };
 }
 
 function subscribeToUserMessages(email) {
@@ -245,16 +269,23 @@ function renderUserMessages() {
   if (!list) return;
   
   if (!userMessages.length) {
-    list.innerHTML = '<p class="form-note">No has enviado mensajes todavía.</p>';
+    list.innerHTML = `<p class="form-note">${translate("profile.noMessages")}</p>`;
     return;
   }
   
   list.innerHTML = userMessages.map((msg) => `
-    <article class="list-item">
-      <header><strong>${msg.subject || "Mensaje"}</strong><span class="pill">${msg.status || "nuevo"}</span></header>
+    <article class="list-item" data-id="${msg.id}">
+      <header>
+        <strong>${msg.subject || translate("profile.myMessages")}</strong>
+        <span class="pill">${statusLabel(msg.status)}</span>
+      </header>
       <p>${msg.message || ""}</p>
-      ${msg.reply ? `<p class="reply-preview"><strong>Respuesta del admin:</strong> ${msg.reply}</p>` : ""}
-      <p class="muted">${formatDate(msg.created_at)}</p>
+      ${msg.reply ? `<p class="reply-preview"><strong>${translate("profile.adminReply")}</strong> ${msg.reply}</p>` : ""}
+      <div class="item-actions" style="margin-top: 0.6rem; display: flex; gap: 0.5rem;">
+        <button class="small-btn" data-edit-message="${msg.id}" type="button">${translate("profile.edit")}</button>
+        <button class="danger-btn" data-delete-message="${msg.id}" type="button">${translate("profile.delete")}</button>
+      </div>
+      <p class="muted" style="margin-top: 0.4rem; font-size: 0.8rem;">${formatDate(msg.created_at)}</p>
     </article>
   `).join("");
 }
@@ -264,23 +295,144 @@ function renderUserReviews() {
   if (!list) return;
   
   if (!userReviews.length) {
-    list.innerHTML = '<p class="form-note">No has escrito reseñas todavía.</p>';
+    list.innerHTML = `<p class="form-note">${translate("profile.noReviews")}</p>`;
     return;
   }
   
   list.innerHTML = userReviews.map((r) => `
-    <article class="list-item">
+    <article class="list-item" data-id="${r.id}">
       <header>
-        <strong>${r.name || "Anónimo"}</strong>
+        <strong>${r.name || translate("profile.anonymous")}</strong>
         <span class="pill">${r.stars ? "★".repeat(r.stars) + "☆".repeat(5 - r.stars) : ""}</span>
-        <span class="pill">${r.status || "nuevo"}</span>
+        <span class="pill">${statusLabel(r.status)}</span>
       </header>
       <p>${r.comment || ""}</p>
-      ${r.reply ? `<p class="reply-preview"><strong>Respuesta del admin:</strong> ${r.reply}</p>` : ""}
-      <p class="muted">${formatDate(r.created_at || r.date)}</p>
+      ${r.reply ? `<p class="reply-preview"><strong>${translate("profile.adminReply")}</strong> ${r.reply}</p>` : ""}
+      <div class="item-actions" style="margin-top: 0.6rem; display: flex; gap: 0.5rem;">
+        <button class="small-btn" data-edit-review="${r.id}" type="button">${translate("profile.edit")}</button>
+        <button class="danger-btn" data-delete-review="${r.id}" type="button">${translate("profile.delete")}</button>
+      </div>
+      <p class="muted" style="margin-top: 0.4rem; font-size: 0.8rem;">${formatDate(r.created_at || r.date)}</p>
     </article>
   `).join("");
 }
+
+function statusLabel(status) {
+  const labels = {
+    nuevo: translate("profile.new") || "Nuevo",
+    leido: translate("profile.read") || "Leído",
+    revisado: translate("profile.read") || "Leído",
+    respondido: translate("profile.replied") || "Respondido"
+  };
+  return labels[status] || status;
+}
+
+const commentsListEl = document.querySelector("#myCommentsList");
+if (commentsListEl) {
+  commentsListEl.addEventListener("click", async (e) => {
+    const editBtn = e.target.closest("[data-edit-message]");
+    if (editBtn && commentsListEl.contains(editBtn)) {
+      const msgId = editBtn.dataset.editMessage;
+      const msg = userMessages.find((m) => String(m.id) === String(msgId));
+      if (!msg) return;
+
+      const newSubject = prompt(translate("profile.enterSubject"), msg.subject || "");
+      if (newSubject === null) return;
+      const newMessage = prompt(translate("profile.enterMessage"), msg.message || "");
+      if (newMessage === null) return;
+
+      try {
+        await saveMessage({ ...msg, subject: newSubject, message: newMessage });
+        if (supabaseReady) {
+          subscribeToUserMessages(currentUser.email);
+        } else {
+          loadLocalMessages();
+        }
+      } catch (err) {
+        alert(translate("profile.errorUpdate") + " " + err.message);
+      }
+      return;
+    }
+
+    const delBtn = e.target.closest("[data-delete-message]");
+    if (delBtn && commentsListEl.contains(delBtn)) {
+      const msgId = delBtn.dataset.deleteMessage;
+      if (confirm(translate("profile.confirmDelete"))) {
+        try {
+          await deleteMessage(msgId);
+          if (supabaseReady) {
+            subscribeToUserMessages(currentUser.email);
+          } else {
+            loadLocalMessages();
+          }
+        } catch (err) {
+          alert(translate("profile.errorDelete") + " " + err.message);
+        }
+      }
+    }
+  });
+}
+
+const reviewsListEl = document.querySelector("#myReviewsList");
+if (reviewsListEl) {
+  reviewsListEl.addEventListener("click", async (e) => {
+    const editBtn = e.target.closest("[data-edit-review]");
+    if (editBtn && reviewsListEl.contains(editBtn)) {
+      const rId = editBtn.dataset.editReview;
+      const review = userReviews.find((r) => String(r.id) === String(rId));
+      if (!review) return;
+
+      const newStarsRaw = prompt(translate("profile.enterStars"), review.stars || "5");
+      if (newStarsRaw === null) return;
+      const newStars = parseInt(newStarsRaw);
+      if (isNaN(newStars) || newStars < 1 || newStars > 5) return;
+
+      const newComment = prompt(translate("profile.enterComment"), review.comment || "");
+      if (newComment === null) return;
+
+      try {
+        await saveReview({ ...review, stars: newStars, comment: newComment });
+        if (supabaseReady) {
+          subscribeToUserReviews(currentUser.email);
+        } else {
+          loadLocalReviews();
+        }
+      } catch (err) {
+        alert(translate("profile.errorUpdate") + " " + err.message);
+      }
+      return;
+    }
+
+    const delBtn = e.target.closest("[data-delete-review]");
+    if (delBtn && reviewsListEl.contains(delBtn)) {
+      const rId = delBtn.dataset.deleteReview;
+      if (confirm(translate("profile.confirmDelete"))) {
+        try {
+          await deleteReview(rId);
+          if (supabaseReady) {
+            subscribeToUserReviews(currentUser.email);
+          } else {
+            loadLocalReviews();
+          }
+        } catch (err) {
+          alert(translate("profile.errorDelete") + " " + err.message);
+        }
+      }
+    }
+  });
+}
+
+document.querySelector("#menuToggle")?.addEventListener("click", () => {
+  document.querySelector("#navLinks")?.classList.toggle("open");
+});
+
+window.addEventListener("learnmore:language-change", () => {
+  if (currentUser) {
+    fillProfile(currentUser);
+    renderUserMessages();
+    renderUserReviews();
+  }
+});
 
 function formatDate(value) {
   if (!value) return "Ahora";
