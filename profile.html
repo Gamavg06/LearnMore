@@ -96,6 +96,60 @@
     </div>
   </main>
 
+  <dialog class="custom-modal" id="editCommentModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 data-i18n="profile.editCommentTitle">Editar comentario</h3>
+        <button class="modal-close-btn" id="closeEditCommentModal" type="button">✕</button>
+      </div>
+      <form id="editCommentForm">
+        <input type="hidden" id="editCommentId">
+        <label>
+          <span data-i18n="form.subject">Asunto</span>
+          <input type="text" id="editCommentSubject" required>
+        </label>
+        <label>
+          <span data-i18n="form.message">Mensaje</span>
+          <textarea id="editCommentText" required rows="4"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="submit-btn" type="submit" data-i18n="admin.saveGuide">Guardar</button>
+          <button class="btn-secondary" id="cancelEditComment" type="button" data-i18n="admin.cancelButton">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog class="custom-modal" id="editReviewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 data-i18n="profile.editReviewTitle">Editar reseña</h3>
+        <button class="modal-close-btn" id="closeEditReviewModal" type="button">✕</button>
+      </div>
+      <form id="editReviewForm">
+        <input type="hidden" id="editReviewId">
+        <div class="stars-selector-container">
+          <span data-i18n="reviews.rating">Calificación:</span>
+          <div class="stars-selector" id="editReviewStars">
+            <button class="edit-star" data-val="1" type="button" aria-label="1 estrella">☆</button>
+            <button class="edit-star" data-val="2" type="button" aria-label="2 estrellas">☆</button>
+            <button class="edit-star" data-val="3" type="button" aria-label="3 estrellas">☆</button>
+            <button class="edit-star" data-val="4" type="button" aria-label="4 estrellas">☆</button>
+            <button class="edit-star" data-val="5" type="button" aria-label="5 estrellas">☆</button>
+          </div>
+        </div>
+        <label>
+          <span data-i18n="profile.editCommentLabel">Comentario</span>
+          <textarea id="editReviewComment" data-i18n-placeholder="reviews.commentPlaceholder" placeholder="Cuéntanos tu experiencia..." required rows="4"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="submit-btn" type="submit" data-i18n="admin.saveGuide">Guardar</button>
+          <button class="btn-secondary" id="cancelEditReview" type="button" data-i18n="admin.cancelButton">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <script type="module" src="js/profile.js"></script>
 </body>
 </html>

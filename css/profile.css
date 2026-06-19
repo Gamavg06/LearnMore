@@ -228,3 +228,112 @@
     position: static;
   }
 }
+
+/* Custom Modal Premium styles */
+.custom-modal {
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  background: rgba(13, 19, 33, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: var(--text, #f4f7fb);
+  padding: 0;
+  width: min(450px, 90vw);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  outline: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+}
+
+[data-theme="light"] .custom-modal {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.06);
+}
+
+.custom-modal::backdrop {
+  background: rgba(5, 7, 12, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  padding-bottom: 0.75rem;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: "Syne", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.modal-close-btn:hover {
+  color: var(--text);
+}
+
+#editReviewForm {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.stars-selector-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.stars-selector {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.edit-star {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  color: var(--muted);
+  font-size: 1.75rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 6px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+
+.edit-star.active,
+.edit-star:hover {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.15);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+}

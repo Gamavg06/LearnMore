@@ -159,6 +159,27 @@
     </form>
   </aside>
 
+  <dialog class="custom-modal" id="replyReviewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 data-i18n="admin.replyReviewTitle">Responder reseña</h3>
+        <button class="modal-close-btn" id="closeReplyReviewModal" type="button">✕</button>
+      </div>
+      <form id="replyReviewForm">
+        <input type="hidden" id="replyReviewId">
+        <p class="review-text-preview" id="replyReviewTextPreview"></p>
+        <label>
+          <span data-i18n="admin.writeReplyPlaceholder">Escribe tu respuesta...</span>
+          <textarea id="replyReviewText" data-i18n-placeholder="admin.writeReplyPlaceholder" placeholder="Escribe tu respuesta..." required rows="4"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="submit-btn" type="submit" data-i18n="admin.sendReplyButton">Enviar respuesta</button>
+          <button class="btn-secondary" id="cancelReplyReview" type="button" data-i18n="admin.cancelButton">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
   <script>window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__ = "https://brjywswhmqwokqemaosr.supabase.co/functions/v1/contact-email"; window.__LEARNMORE_SEND_REPLY_EMAIL_URL__ = "https://brjywswhmqwokqemaosr.supabase.co/functions/v1/send-reply-email";</script>
   <script type="module" src="js/admin.js"></script>
 </body>

@@ -336,21 +336,11 @@ if (commentsListEl) {
       const msg = userMessages.find((m) => String(m.id) === String(msgId));
       if (!msg) return;
 
-      const newSubject = prompt(translate("profile.enterSubject"), msg.subject || "");
-      if (newSubject === null) return;
-      const newMessage = prompt(translate("profile.enterMessage"), msg.message || "");
-      if (newMessage === null) return;
+      if (editCommentIdInput) editCommentIdInput.value = msgId;
+      if (editCommentSubjectInput) editCommentSubjectInput.value = msg.subject || "";
+      if (editCommentTextInput) editCommentTextInput.value = msg.message || "";
 
-      try {
-        await saveMessage({ ...msg, subject: newSubject, message: newMessage });
-        if (supabaseReady) {
-          subscribeToUserMessages(currentUser.email);
-        } else {
-          loadLocalMessages();
-        }
-      } catch (err) {
-        alert(translate("profile.errorUpdate") + " " + err.message);
-      }
+      editCommentModal?.showModal();
       return;
     }
 
@@ -382,24 +372,11 @@ if (reviewsListEl) {
       const review = userReviews.find((r) => String(r.id) === String(rId));
       if (!review) return;
 
-      const newStarsRaw = prompt(translate("profile.enterStars"), review.stars || "5");
-      if (newStarsRaw === null) return;
-      const newStars = parseInt(newStarsRaw);
-      if (isNaN(newStars) || newStars < 1 || newStars > 5) return;
+      if (editReviewIdInput) editReviewIdInput.value = rId;
+      if (editReviewCommentInput) editReviewCommentInput.value = review.comment || "";
+      updateEditReviewStars(review.stars || 5);
 
-      const newComment = prompt(translate("profile.enterComment"), review.comment || "");
-      if (newComment === null) return;
-
-      try {
-        await saveReview({ ...review, stars: newStars, comment: newComment });
-        if (supabaseReady) {
-          subscribeToUserReviews(currentUser.email);
-        } else {
-          loadLocalReviews();
-        }
-      } catch (err) {
-        alert(translate("profile.errorUpdate") + " " + err.message);
-      }
+      editReviewModal?.showModal();
       return;
     }
 
@@ -439,3 +416,102 @@ function formatDate(value) {
   if (value.seconds) return new Date(value.seconds * 1000).toLocaleDateString();
   return new Date(value).toLocaleDateString();
 }
+
+// Premium Modal Lógica para Edición de Reseñas
+let currentEditStars = 5;
+const editReviewModal = document.querySelector("#editReviewModal");
+const editReviewForm = document.querySelector("#editReviewForm");
+const editReviewIdInput = document.querySelector("#editReviewId");
+const editReviewCommentInput = document.querySelector("#editReviewComment");
+const editReviewStarsContainer = document.querySelector("#editReviewStars");
+const closeEditReviewModalBtn = document.querySelector("#closeEditReviewModal");
+const cancelEditReviewBtn = document.querySelector("#cancelEditReview");
+
+window.updateEditReviewStars = function(stars) {
+  currentEditStars = stars;
+  const editStarBtns = Array.from(document.querySelectorAll(".edit-star"));
+  editStarBtns.forEach((btn) => {
+    const val = parseInt(btn.dataset.val);
+    const active = val <= stars;
+    btn.textContent = active ? "★" : "☆";
+    btn.classList.toggle("active", active);
+  });
+}
+
+if (editReviewStarsContainer) {
+  const editStarBtns = Array.from(editReviewStarsContainer.querySelectorAll(".edit-star"));
+  editStarBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const stars = parseInt(btn.dataset.val);
+      window.updateEditReviewStars(stars);
+    });
+  });
+}
+
+function closeEditModal() {
+  editReviewModal?.close();
+  editReviewForm?.reset();
+}
+
+closeEditReviewModalBtn?.addEventListener("click", closeEditModal);
+cancelEditReviewBtn?.addEventListener("click", closeEditModal);
+
+editReviewForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const rId = editReviewIdInput.value;
+  const review = userReviews.find((r) => String(r.id) === String(rId));
+  if (!review) return;
+
+  const comment = editReviewCommentInput.value.trim();
+  try {
+    await saveReview({ ...review, stars: currentEditStars, comment });
+    closeEditModal();
+    if (supabaseReady) {
+      subscribeToUserReviews(currentUser.email);
+    } else {
+      loadLocalReviews();
+    }
+  } catch (err) {
+    alert(translate("profile.errorUpdate") + " " + err.message);
+  }
+});
+
+// Premium Modal Lógica para Edición de Comentarios
+const editCommentModal = document.querySelector("#editCommentModal");
+const editCommentForm = document.querySelector("#editCommentForm");
+const editCommentIdInput = document.querySelector("#editCommentId");
+const editCommentSubjectInput = document.querySelector("#editCommentSubject");
+const editCommentTextInput = document.querySelector("#editCommentText");
+const closeEditCommentModalBtn = document.querySelector("#closeEditCommentModal");
+const cancelEditCommentBtn = document.querySelector("#cancelEditComment");
+
+function closeEditCommentModal() {
+  editCommentModal?.close();
+  editCommentForm?.reset();
+}
+
+closeEditCommentModalBtn?.addEventListener("click", closeEditCommentModal);
+cancelEditCommentBtn?.addEventListener("click", closeEditCommentModal);
+
+editCommentForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msgId = editCommentIdInput.value;
+  const msg = userMessages.find((m) => String(m.id) === String(msgId));
+  if (!msg) return;
+
+  const subject = editCommentSubjectInput.value.trim();
+  const message = editCommentTextInput.value.trim();
+
+  try {
+    await saveMessage({ ...msg, subject, message });
+    closeEditCommentModal();
+    if (supabaseReady) {
+      subscribeToUserMessages(currentUser.email);
+    } else {
+      loadLocalMessages();
+    }
+  } catch (err) {
+    alert(translate("profile.errorUpdate") + " " + err.message);
+  }
+});

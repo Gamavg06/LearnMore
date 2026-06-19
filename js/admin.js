@@ -722,24 +722,58 @@ if (reviewListEl) {
   });
 }
 
+// Selectores para el modal de respuesta a reseñas
+const replyReviewModal = document.querySelector("#replyReviewModal");
+const replyReviewForm = document.querySelector("#replyReviewForm");
+const replyReviewIdInput = document.querySelector("#replyReviewId");
+const replyReviewTextPreview = document.querySelector("#replyReviewTextPreview");
+const replyReviewTextInput = document.querySelector("#replyReviewText");
+const closeReplyReviewModalBtn = document.querySelector("#closeReplyReviewModal");
+const cancelReplyReviewBtn = document.querySelector("#cancelReplyReview");
+
 function replyToReviewPrompt(id) {
   const review = reviews.find((item) => String(item.id) === String(id));
   if (!review) return;
 
-  const reply = prompt(translate("admin.writeReplyPrompt"), review.reply || "");
-  if (reply === null) return;
+  if (replyReviewIdInput) replyReviewIdInput.value = id;
+  if (replyReviewTextPreview) replyReviewTextPreview.textContent = `"${review.comment || review.message || ""}"`;
+  if (replyReviewTextInput) replyReviewTextInput.value = review.reply || "";
 
-  const adminName = getLocalSession()?.name || "Admin";
-  replyToReview(id, reply, adminName).then(() => {
-    const updated = reviews.find((item) => String(item.id) === String(id));
-    if (updated) {
-      updated.reply = reply;
-      updated.replied_at = new Date().toISOString();
-      updated.replied_by = adminName;
-      renderReviews();
+  replyReviewModal?.showModal();
+}
+
+function closeReplyModal() {
+  replyReviewModal?.close();
+  replyReviewForm?.reset();
+}
+
+if (closeReplyReviewModalBtn) {
+  closeReplyReviewModalBtn.addEventListener("click", closeReplyModal);
+}
+if (cancelReplyReviewBtn) {
+  cancelReplyReviewBtn.addEventListener("click", closeReplyModal);
+}
+
+if (replyReviewForm) {
+  replyReviewForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = replyReviewIdInput.value;
+    const reply = replyReviewTextInput.value.trim();
+    const adminName = getLocalSession()?.name || "Admin";
+
+    try {
+      await replyToReview(id, reply, adminName);
+      const updated = reviews.find((item) => String(item.id) === String(id));
+      if (updated) {
+        updated.reply = reply;
+        updated.replied_at = new Date().toISOString();
+        updated.replied_by = adminName;
+        renderReviews();
+      }
+      closeReplyModal();
+    } catch (error) {
+      alert(translate("admin.errorReply") + " " + error.message);
     }
-  }).catch((error) => {
-    alert(translate("admin.errorReply") + " " + error.message);
   });
 }
 
