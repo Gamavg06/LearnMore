@@ -489,7 +489,24 @@ export async function replyToMessage(id, reply, adminName) {
         updated_at: new Date().toISOString()
       })
       .eq("id", id);
-    if (error) throw error;
+      
+    if (error) {
+      // Check if the error is due to missing columns in schema cache
+      if (error.message && (error.message.includes("column") || error.code === "PGRST204" || error.message.includes("schema cache"))) {
+        console.warn("replied_at/replied_by columns missing in messages table, retrying update without them...");
+        const { error: retryError } = await supabase
+          .from("messages")
+          .update({
+            reply,
+            status: "respondido",
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", id);
+        if (retryError) throw retryError;
+      } else {
+        throw error;
+      }
+    }
     return id;
   } catch (error) {
     console.error("Error replying to message:", error);
@@ -710,7 +727,23 @@ export async function replyToReview(id, reply, adminName) {
         updated_at: new Date().toISOString()
       })
       .eq("id", id);
-    if (error) throw error;
+      
+    if (error) {
+      // Check if the error is due to missing columns in schema cache
+      if (error.message && (error.message.includes("column") || error.code === "PGRST204" || error.message.includes("schema cache"))) {
+        console.warn("replied_at/replied_by columns missing in reviews table, retrying update without them...");
+        const { error: retryError } = await supabase
+          .from("reviews")
+          .update({
+            reply,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", id);
+        if (retryError) throw retryError;
+      } else {
+        throw error;
+      }
+    }
     return id;
   } catch (error) {
     console.error("Error replying to review:", error);
