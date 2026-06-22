@@ -287,9 +287,63 @@ function renderActivity() {
   if (!activityList) return;
 
   const list = activity.slice(0, 8);
-  activityList.innerHTML = list.length
-    ? list.map((item) => `<article class="list-item"><strong>${item.text || item.type}</strong><p>${formatDate(item.createdAt || item.created_at)}</p></article>`).join("")
-    : `<p class="form-note">${translate("admin.activityNone")}</p>`;
+  
+  if (!list.length) {
+    activityList.innerHTML = `<p class="form-note">${translate("admin.activityNone")}</p>`;
+    return;
+  }
+
+  activityList.innerHTML = list.map((item) => {
+    let icon = "⚡";
+    let badgeColor = "var(--accent-2)";
+    let glowColor = "rgba(124, 58, 237, 0.12)";
+    const type = String(item.type || "").toLowerCase();
+
+    if (type.includes("guia") || type.includes("guide")) {
+      icon = "📖";
+      badgeColor = "var(--accent-3)";
+      glowColor = "rgba(16, 185, 129, 0.12)";
+    } else if (type.includes("review") || type.includes("reseña") || type.includes("stars")) {
+      icon = "⭐";
+      badgeColor = "#fbbf24";
+      glowColor = "rgba(251, 191, 36, 0.12)";
+    } else if (type.includes("message") || type.includes("mensaje") || type.includes("correo")) {
+      icon = "✉️";
+      badgeColor = "var(--accent)";
+      glowColor = "rgba(0, 212, 255, 0.12)";
+    } else if (type.includes("user") || type.includes("usuario") || type.includes("profile")) {
+      icon = "👤";
+      badgeColor = "#fb7185";
+      glowColor = "rgba(251, 113, 133, 0.12)";
+    } else if (type.includes("carrera") || type.includes("career")) {
+      icon = "🎓";
+      badgeColor = "#f472b6";
+      glowColor = "rgba(244, 114, 182, 0.12)";
+    }
+
+    const timeStr = formatRelativeTime(item.createdAt || item.created_at || item.date);
+
+    return `
+      <article class="activity-item-premium" style="display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.2rem; background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border); border-radius: 12px; transition: all 0.2s ease; position: relative; overflow: hidden; gap: 1rem; margin-bottom: 0.5rem;">
+        <div style="position: absolute; left: 0; top: 0; width: 4px; height: 100%; background: ${badgeColor}; box-shadow: 0 0 8px ${badgeColor};"></div>
+        
+        <div style="display: flex; align-items: center; gap: 0.9rem; flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: ${glowColor}; border: 1px solid color-mix(in srgb, ${badgeColor} 20%, transparent); border-radius: 50%; font-size: 1.1rem; flex-shrink: 0;">
+            ${icon}
+          </div>
+          <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-weight: 600; font-size: 0.92rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${item.text || item.type}
+            </span>
+          </div>
+        </div>
+        
+        <div style="font-size: 0.8rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; font-weight: 500;">
+          ${timeStr}
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderCareerSelect() {
@@ -702,6 +756,22 @@ function formatDate(value) {
   if (!value) return translate("admin.now");
   if (value.seconds) return new Date(value.seconds * 1000).toLocaleString();
   return new Date(value).toLocaleString();
+}
+
+function formatRelativeTime(dateVal) {
+  if (!dateVal) return "";
+  const date = new Date(dateVal);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return translate("nav.home") === "Inicio" ? "Hace un momento" : "Just now";
+  if (diffMins < 60) return translate("nav.home") === "Inicio" ? `Hace ${diffMins} min` : `${diffMins}m ago`;
+  if (diffHours < 24) return translate("nav.home") === "Inicio" ? `Hace ${diffHours} hr` : `${diffHours}h ago`;
+  if (diffDays === 1) return translate("nav.home") === "Inicio" ? "Ayer" : "Yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 

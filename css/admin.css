@@ -876,3 +876,15 @@ input[type="file"]::file-selector-button:hover {
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
 }
+
+/* Premium Activity Items */
+.activity-item-premium {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.activity-item-premium:hover {
+  background: rgba(255, 255, 255, 0.025) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  transform: translateX(4px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
+}
