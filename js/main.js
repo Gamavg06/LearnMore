@@ -1,11 +1,12 @@
 import { initTheme } from "./theme.js";
 import { initLanguage, applyLanguage, translate, translateDynamic } from "./language.js";
 import { supabaseReady, supabase, onAuthStateChanged } from "./supabase.js";
-import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession, baseCareerOptions, incrementGuideViews } from "./guides.js";
+import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession, baseCareerOptions, incrementGuideViews, subscribeReviews, saveReview } from "./guides.js";
 import { ejecutarMigracionAutomatica } from "./migrar.js";
 
 let guides = [];
 let careers = baseCareerOptions();
+let reviews = [];
 let activeCareer = "all";
 let activeSemester = "all";
 let isUserLoggedIn = false;
@@ -69,6 +70,11 @@ subscribeGuides((items) => {
   renderGuides();
   renderCarousel();
   renderPopularGuides();
+});
+
+subscribeReviews((items) => {
+  console.log("Reseñas recibidas:", items);
+  reviews = items;
 });
 
 document.querySelector("#contactForm")?.addEventListener("submit", async (event) => {
@@ -220,6 +226,12 @@ async function openGuide(id) {
   const detailTrans = await translateDynamic(guide.detail || guide.desc);
   const topicsTrans = await Promise.all((guide.topics || []).map(topic => translateDynamic(topic)));
 
+  // Get reviews and calculate average rating
+  const guideReviews = reviews.filter(r => r.comment && r.comment.startsWith(`[guide:${id}]`));
+  const totalReviews = guideReviews.length;
+  const avgStars = totalReviews > 0 ? (guideReviews.reduce((sum, r) => sum + (r.stars || r.rating || 0), 0) / totalReviews).toFixed(1) : 0;
+  const currentUser = getLocalCurrentUser();
+
   modalBody.innerHTML = `
     <h2>${titleTrans}</h2>
     <p class="pill" style="display: inline-block; margin: 10px 0;">${careerName(guide.career)} - ${translate("profile.semester")} ${guide.sem}</p>
@@ -229,8 +241,121 @@ async function openGuide(id) {
       ${topicsTrans.map((topic) => `<span class="pill">${topic}</span>`).join("")}
     </div>
     ${guide.fileUrl ? `<p style="margin-top: 20px;"><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">${translate("nav.home") === "Inicio" ? "Abrir recurso" : "Open resource"}</a></p>` : ""}
+    
+    <div class="guide-rating-summary" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+        <h3 style="margin: 0; font-size: 1.15rem;">${translate("nav.home") === "Inicio" ? "Calificaciones y Reseñas" : "Ratings & Reviews"}</h3>
+        <span style="font-weight: bold; color: #fbbf24; font-size: 1rem; display: flex; align-items: center; gap: 4px;">
+          ${totalReviews > 0 ? `★ ${avgStars} (${totalReviews})` : `★ -- (0)`}
+        </span>
+      </div>
+      
+      <!-- List of reviews -->
+      <div class="guide-reviews-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; padding-right: 5px;">
+        ${guideReviews.length === 0 ? `
+          <p style="color: var(--muted); text-align: center; margin: 10px 0; font-size: 0.9rem;">${translate("nav.home") === "Inicio" ? "Aún no hay reseñas para esta guía. ¡Sé el primero en calificarla!" : "No reviews yet for this guide. Be the first to rate it!"}</p>
+        ` : guideReviews.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).map(r => {
+          const cleanComment = r.comment ? r.comment.replace(/^\[guide:[^\]]+\]\s*/, '') : '';
+          const starsStr = '★'.repeat(r.stars || r.rating || 0) + '☆'.repeat(5 - (r.stars || r.rating || 0));
+          return `
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 0.85rem; color: var(--text);">${r.name || translate("profile.anonymous")}</strong>
+                <span style="color: #fbbf24; font-size: 0.85rem;">${starsStr}</span>
+              </div>
+              <p style="margin: 3px 0 0; font-size: 0.85rem; color: var(--text); opacity: 0.9; line-height: 1.3;">${cleanComment}</p>
+              ${r.reply ? `
+                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-left: 8px; border-left: 2px solid var(--accent); background: rgba(255,255,255,0.01);">
+                  <strong style="font-size: 0.8rem; color: var(--accent);">${translate("profile.adminReply")}</strong>
+                  <p style="margin: 2px 0 0; font-size: 0.8rem; color: var(--text); opacity: 0.8; line-height: 1.3;">${r.reply}</p>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Add review form -->
+      <form id="guideReviewForm" style="display: flex; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.01); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+        <h4 style="margin: 0; font-size: 0.95rem;">${translate("nav.home") === "Inicio" ? "Califica este recurso" : "Rate this resource"}</h4>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 0.85rem; color: var(--muted);">${translate("nav.home") === "Inicio" ? "Calificación:" : "Rating:"}</span>
+          <div class="star-rating-input" style="display: flex; gap: 4px; font-size: 1.4rem;">
+            <span class="guide-star-interactive" data-star="1" style="cursor: pointer; color: rgba(255,255,255,0.2); transition: color 0.1s;">★</span>
+            <span class="guide-star-interactive" data-star="2" style="cursor: pointer; color: rgba(255,255,255,0.2); transition: color 0.1s;">★</span>
+            <span class="guide-star-interactive" data-star="3" style="cursor: pointer; color: rgba(255,255,255,0.2); transition: color 0.1s;">★</span>
+            <span class="guide-star-interactive" data-star="4" style="cursor: pointer; color: rgba(255,255,255,0.2); transition: color 0.1s;">★</span>
+            <span class="guide-star-interactive" data-star="5" style="cursor: pointer; color: rgba(255,255,255,0.2); transition: color 0.1s;">★</span>
+          </div>
+        </div>
+        <textarea id="guideReviewComment" placeholder="${translate("nav.home") === "Inicio" ? "Escribe tu comentario sobre esta guía..." : "Write your review for this guide..."}" required style="width: 100%; min-height: 60px; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--text); font-family: inherit; font-size: 0.85rem; resize: vertical;"></textarea>
+        <button type="submit" class="btn-primary" style="align-self: flex-start; padding: 6px 12px; font-size: 0.85rem; min-height: auto;">${translate("nav.home") === "Inicio" ? "Enviar Calificación" : "Submit Rating"}</button>
+      </form>
+    </div>
   `;
+
   modal.showModal();
+
+  // Interactive star rating
+  let selectedStars = 0;
+  const stars = modalBody.querySelectorAll(".guide-star-interactive");
+  
+  function highlightStars(count) {
+    stars.forEach(star => {
+      const val = parseInt(star.dataset.star);
+      if (val <= count) {
+        star.style.color = "#fbbf24";
+        star.style.textShadow = "0 0 5px rgba(251, 191, 36, 0.4)";
+      } else {
+        star.style.color = "rgba(255,255,255,0.2)";
+        star.style.textShadow = "none";
+      }
+    });
+  }
+
+  stars.forEach(star => {
+    star.addEventListener("mouseover", () => {
+      const val = parseInt(star.dataset.star);
+      highlightStars(val);
+    });
+    star.addEventListener("mouseout", () => {
+      highlightStars(selectedStars);
+    });
+    star.addEventListener("click", () => {
+      selectedStars = parseInt(star.dataset.star);
+      highlightStars(selectedStars);
+    });
+  });
+
+  // Submit review form
+  const reviewForm = modalBody.querySelector("#guideReviewForm");
+  if (reviewForm) {
+    reviewForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const commentInput = modalBody.querySelector("#guideReviewComment");
+      const commentText = commentInput.value.trim();
+      
+      if (selectedStars === 0) {
+        alert(translate("nav.home") === "Inicio" ? "Por favor selecciona una calificación de estrellas." : "Please select a star rating.");
+        return;
+      }
+      
+      const payload = {
+        name: currentUser?.name || translate("profile.anonymous"),
+        email: currentUser?.email || "",
+        stars: selectedStars,
+        comment: `[guide:${id}] ${commentText}`,
+        created_at: new Date().toISOString()
+      };
+      
+      try {
+        await saveReview(payload);
+        openGuide(id);
+      } catch (err) {
+        alert("Error al enviar reseña: " + err.message);
+      }
+    });
+  }
 }
 
 function countGuides(careerKey) {

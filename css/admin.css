@@ -836,3 +836,43 @@ input[type="file"]::file-selector-button:hover {
   gap: 0.8rem;
   justify-content: flex-end;
 }
+
+/* Reviews Tabs styling for Admin */
+.reviews-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.review-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  position: relative;
+  transition: color 0.2s;
+  font-size: 0.95rem;
+}
+
+.review-tab-btn:hover {
+  color: var(--text);
+}
+
+.review-tab-btn.active {
+  color: var(--accent);
+}
+
+.review-tab-btn.active::after {
+  content: "";
+  position: absolute;
+  bottom: -0.6rem;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}

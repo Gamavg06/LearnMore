@@ -55,7 +55,13 @@
           <p id="errorMsg" class="error-msg" data-i18n="reviews.error"></p>
         </div>
 
-        <div id="reviewsList"></div>
+        <div class="reviews-list-container" style="flex: 2; display: flex; flex-direction: column;">
+          <div class="reviews-tabs">
+            <button class="review-tab-btn active" data-tab="platform" type="button" data-i18n="reviews.platformTab">Reseñas de la Plataforma</button>
+            <button class="review-tab-btn" data-tab="guides" type="button" data-i18n="reviews.guidesTab">Reseñas de Guías</button>
+          </div>
+          <div id="reviewsList"></div>
+        </div>
       </div>
     </section>
   </main>

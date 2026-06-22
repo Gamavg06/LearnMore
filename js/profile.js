@@ -20,6 +20,7 @@ import {
   deleteMessage,
   saveReview,
   deleteReview,
+  subscribeGuides,
 } from "./guides.js";
 
 initTheme();
@@ -35,6 +36,23 @@ let currentUser = null;
 let careerChangedManually = false;
 let userMessages = [];
 let userReviews = [];
+let guides = [];
+let activeReviewTab = "platform";
+
+subscribeGuides((items) => {
+  guides = items;
+  renderUserReviews();
+});
+
+// Event listener for profile reviews tabs
+document.querySelectorAll(".reviews-tabs .review-tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".reviews-tabs .review-tab-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeReviewTab = btn.dataset.tab;
+    renderUserReviews();
+  });
+});
 
 if (supabaseReady) {
   onAuthStateChanged((event, session) => {
@@ -294,27 +312,54 @@ function renderUserReviews() {
   const list = document.querySelector("#myReviewsList");
   if (!list) return;
   
-  if (!userReviews.length) {
+  const filteredReviews = userReviews.filter((r) => {
+    const isGuide = r.comment && r.comment.startsWith("[guide:");
+    return activeReviewTab === "guides" ? isGuide : !isGuide;
+  });
+
+  if (!filteredReviews.length) {
     list.innerHTML = `<p class="form-note">${translate("profile.noReviews")}</p>`;
     return;
   }
   
-  list.innerHTML = userReviews.map((r) => `
-    <article class="list-item" data-id="${r.id}">
-      <header>
-        <strong>${r.name || translate("profile.anonymous")}</strong>
-        <span class="pill">${r.stars ? "★".repeat(r.stars) + "☆".repeat(5 - r.stars) : ""}</span>
-        <span class="pill">${statusLabel(r.status)}</span>
-      </header>
-      <p>${r.comment || ""}</p>
-      ${r.reply ? `<p class="reply-preview"><strong>${translate("profile.adminReply")}</strong> ${r.reply}</p>` : ""}
-      <div class="item-actions" style="margin-top: 0.6rem; display: flex; gap: 0.5rem;">
-        <button class="small-btn" data-edit-review="${r.id}" type="button">${translate("profile.edit")}</button>
-        <button class="danger-btn" data-delete-review="${r.id}" type="button">${translate("profile.delete")}</button>
-      </div>
-      <p class="muted" style="margin-top: 0.4rem; font-size: 0.8rem;">${formatDate(r.created_at || r.date)}</p>
-    </article>
-  `).join("");
+  list.innerHTML = filteredReviews.map((r) => {
+    let cleanComment = r.comment || "";
+    let guideBadgeHtml = "";
+
+    if (activeReviewTab === "guides") {
+      const match = cleanComment.match(/^\[guide:(.+?)\]\s*/);
+      if (match) {
+        const guideId = match[1];
+        cleanComment = cleanComment.replace(match[0], "");
+        const guide = guides.find((g) => String(g.id) === String(guideId));
+        if (guide) {
+          guideBadgeHtml = `<span class="pill" style="margin-left: 8px; font-size: 0.75rem; border: 1px solid var(--accent-border-soft); color: var(--accent); font-weight: bold; padding: 2px 8px; border-radius: 12px; display: inline-block;">📖 ${guide.title}</span>`;
+        } else {
+          guideBadgeHtml = `<span class="pill" style="margin-left: 8px; font-size: 0.75rem; border: 1px solid var(--border); color: var(--muted); padding: 2px 8px; border-radius: 12px; display: inline-block;">📖 Guía #${guideId}</span>`;
+        }
+      }
+    }
+
+    return `
+      <article class="list-item" data-id="${r.id}">
+        <header>
+          <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+            <strong>${r.name || translate("profile.anonymous")}</strong>
+            ${guideBadgeHtml}
+          </div>
+          <span class="pill">${r.stars ? "★".repeat(r.stars) + "☆".repeat(5 - r.stars) : ""}</span>
+          <span class="pill">${statusLabel(r.status)}</span>
+        </header>
+        <p>${cleanComment}</p>
+        ${r.reply ? `<p class="reply-preview"><strong>${translate("profile.adminReply")}</strong> ${r.reply}</p>` : ""}
+        <div class="item-actions" style="margin-top: 0.6rem; display: flex; gap: 0.5rem;">
+          <button class="small-btn" data-edit-review="${r.id}" type="button">${translate("profile.edit")}</button>
+          <button class="danger-btn" data-delete-review="${r.id}" type="button">${translate("profile.delete")}</button>
+        </div>
+        <p class="muted" style="margin-top: 0.4rem; font-size: 0.8rem;">${formatDate(r.created_at || r.date)}</p>
+      </article>
+    `;
+  }).join("");
 }
 
 function statusLabel(status) {
@@ -373,7 +418,12 @@ if (reviewsListEl) {
       if (!review) return;
 
       if (editReviewIdInput) editReviewIdInput.value = rId;
-      if (editReviewCommentInput) editReviewCommentInput.value = review.comment || "";
+      let cleanComment = review.comment || "";
+      const match = cleanComment.match(/^\[guide:(.+?)\]\s*/);
+      if (match) {
+        cleanComment = cleanComment.replace(match[0], '');
+      }
+      if (editReviewCommentInput) editReviewCommentInput.value = cleanComment;
       updateEditReviewStars(review.stars || 5);
 
       editReviewModal?.showModal();
@@ -463,9 +513,15 @@ editReviewForm?.addEventListener("submit", async (e) => {
   const review = userReviews.find((r) => String(r.id) === String(rId));
   if (!review) return;
 
-  const comment = editReviewCommentInput.value.trim();
+  const commentText = editReviewCommentInput.value.trim();
+  let finalComment = commentText;
+  const match = review.comment ? review.comment.match(/^\[guide:(.+?)\]\s*/) : null;
+  if (match) {
+    finalComment = `${match[0]}${commentText}`;
+  }
+
   try {
-    await saveReview({ ...review, stars: currentEditStars, comment });
+    await saveReview({ ...review, stars: currentEditStars, comment: finalComment });
     closeEditModal();
     if (supabaseReady) {
       subscribeToUserReviews(currentUser.email);

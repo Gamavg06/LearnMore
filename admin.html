@@ -34,9 +34,14 @@
 
     <section class="admin-view active" id="dashboardView">
       <div class="metric-grid" id="metricGrid"></div>
-      <section class="admin-card">
+      <section class="admin-card" style="margin-bottom: 1.5rem;">
         <h2 data-i18n="admin.recentActivity">Actividad reciente</h2>
         <div class="activity-list" id="activityList"></div>
+      </section>
+      <section class="admin-card">
+        <h2 data-i18n="admin.popularityTitle">Popularidad de los Recursos (Visitas)</h2>
+        <p class="muted" style="margin-top: -10px; margin-bottom: 25px; font-size: 0.9rem;" data-i18n="admin.popularityCopy">Visualización de las guías más consultadas mediante gráficos de barras estructurados.</p>
+        <div id="popularityChart"></div>
       </section>
     </section>
 
@@ -136,6 +141,10 @@
     <section class="admin-view" id="reviewsView">
       <section class="admin-card">
         <h2 data-i18n="reviews.title">Reseñas de usuarios</h2>
+        <div class="reviews-tabs">
+          <button class="review-tab-btn active" data-tab="platform" type="button" data-i18n="reviews.platformTab">Reseñas de la Plataforma</button>
+          <button class="review-tab-btn" data-tab="guides" type="button" data-i18n="reviews.guidesTab">Reseñas de Guías</button>
+        </div>
         <div class="admin-list" id="reviewList"></div>
       </section>
     </section>

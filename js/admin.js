@@ -34,6 +34,17 @@ let gmailMessages = [];
 let users = [];
 let activity = [];
 let reviews = [];
+let activeReviewTab = "platform";
+
+// Event listener for admin reviews tabs
+document.querySelectorAll("#reviewsView .review-tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("#reviewsView .review-tab-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeReviewTab = btn.dataset.tab;
+    renderReviews();
+  });
+});
 
 renderCareerSelect();
 renderCareers();
@@ -224,6 +235,51 @@ function renderDashboard() {
   metricGrid.innerHTML = metrics
     .map(([label, value]) => `<article class="metric-card"><strong>${value}</strong><span>${label}</span></article>`)
     .join("");
+
+  renderPopularityChart();
+}
+
+function renderPopularityChart() {
+  const chartContainer = document.querySelector("#popularityChart");
+  if (!chartContainer) return;
+
+  if (!guides || !guides.length) {
+    chartContainer.innerHTML = `<p class="form-note">${translate("guides.empty") || "No hay guías para mostrar."}</p>`;
+    return;
+  }
+
+  // Sort guides by views descending
+  const sortedGuides = [...guides].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0));
+  const topGuides = sortedGuides.slice(0, 5);
+  const maxViews = Math.max(...topGuides.map(g => Number(g.views) || 0), 1);
+
+  chartContainer.innerHTML = `
+    <div class="popularity-chart-list" style="display: flex; flex-direction: column; gap: 1.25rem; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem;">
+      ${topGuides.map(guide => {
+        const viewsCount = Number(guide.views) || 0;
+        const percentage = Math.max((viewsCount / maxViews) * 100, 3);
+        
+        let labelTitle = guide.title;
+        if (labelTitle.length > 20) {
+          labelTitle = labelTitle.substring(0, 18) + "...";
+        }
+
+        return `
+          <div class="popularity-row" style="display: flex; align-items: center; gap: 1.5rem; width: 100%;">
+            <div class="popularity-label" style="width: 180px; font-weight: 700; font-size: 0.95rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${guide.title}">
+              ${labelTitle}
+            </div>
+            <div class="popularity-bar-wrapper" style="flex: 1; height: 12px; background: rgba(255, 255, 255, 0.05); border-radius: 9999px; overflow: hidden; position: relative;">
+              <div class="popularity-bar-fill" style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #00d4ff, #7c3aed); border-radius: 9999px; box-shadow: 0 0 8px rgba(0, 212, 255, 0.3); transition: width 0.5s ease-in-out;"></div>
+            </div>
+            <div class="popularity-value" style="width: 60px; text-align: right; font-weight: 700; color: #00d4ff; font-size: 0.95rem;">
+              ${viewsCount}
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
 }
 
 function renderActivity() {
@@ -666,25 +722,53 @@ function renderReviews() {
   const reviewList = document.querySelector("#reviewList");
   if (!reviewList) return;
 
-  reviewList.innerHTML = reviews.length
-    ? reviews
+  const filteredReviews = reviews.filter((r) => {
+    const isGuide = r.comment && r.comment.startsWith("[guide:");
+    return activeReviewTab === "guides" ? isGuide : !isGuide;
+  });
+
+  reviewList.innerHTML = filteredReviews.length
+    ? filteredReviews
         .sort((a, b) => new Date(b.created_at || b.date || b.created_at) - new Date(a.created_at || a.date || a.created_at))
         .map(
-          (review) => `
-        <article class="list-item">
-          <header>
-            <strong>${review.name || translate("profile.anonymous")}</strong>
-            <span class="pill">${review.stars ? "★".repeat(review.stars) + "☆".repeat(5 - review.stars) : ""}</span>
-            <span class="pill">${statusLabel(review.status)}</span>
-          </header>
-          <p>${review.comment || review.message || ""}</p>
-          ${review.reply ? `<p class="reply-preview"><strong>${translate("profile.adminReply")}</strong> ${review.reply}</p>` : ""}
-          <div class="item-actions">
-            ${review.status !== "leido" ? `<button class="small-btn" data-review-read="${review.id}" type="button">${translate("admin.markRead")}</button>` : ""}
-            ${!review.reply ? `<button class="small-btn" data-review-reply="${review.id}" type="button">${translate("admin.reply")}</button>` : ""}
-            <button class="danger-btn" data-delete-review="${review.id}" type="button">${translate("admin.delete")}</button>
-          </div>
-        </article>`
+          (review) => {
+            let cleanComment = review.comment || review.message || "";
+            let guideBadgeHtml = "";
+
+            if (activeReviewTab === "guides") {
+              const match = cleanComment.match(/^\[guide:(.+?)\]\s*/);
+              if (match) {
+                const guideId = match[1];
+                cleanComment = cleanComment.replace(match[0], "");
+                const guide = guides.find((g) => String(g.id) === String(guideId));
+                if (guide) {
+                  guideBadgeHtml = `<span class="pill" style="margin-left: 8px; font-size: 0.75rem; border: 1px solid var(--accent-border-soft); color: var(--accent); font-weight: bold; padding: 2px 8px; border-radius: 12px; display: inline-block;">📖 ${guide.title}</span>`;
+                } else {
+                  guideBadgeHtml = `<span class="pill" style="margin-left: 8px; font-size: 0.75rem; border: 1px solid var(--border); color: var(--muted); padding: 2px 8px; border-radius: 12px; display: inline-block;">📖 Guía #${guideId}</span>`;
+                }
+              }
+            }
+
+            return `
+              <article class="list-item">
+                <header>
+                  <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                    <strong>${review.name || translate("profile.anonymous")}</strong>
+                    ${guideBadgeHtml}
+                  </div>
+                  <span class="pill">${review.stars ? "★".repeat(review.stars) + "☆".repeat(5 - review.stars) : ""}</span>
+                  <span class="pill">${statusLabel(review.status)}</span>
+                </header>
+                <p>${cleanComment}</p>
+                ${review.reply ? `<p class="reply-preview"><strong>${translate("profile.adminReply")}</strong> ${review.reply}</p>` : ""}
+                <div class="item-actions">
+                  ${review.status !== "leido" ? `<button class="small-btn" data-review-read="${review.id}" type="button">${translate("admin.markRead")}</button>` : ""}
+                  ${!review.reply ? `<button class="small-btn" data-review-reply="${review.id}" type="button">${translate("admin.reply")}</button>` : ""}
+                  <button class="danger-btn" data-delete-review="${review.id}" type="button">${translate("admin.delete")}</button>
+                </div>
+              </article>
+            `;
+          }
         )
         .join("")
     : `<p class="form-note">${translate("profile.noReviews")}</p>`;
@@ -735,8 +819,14 @@ function replyToReviewPrompt(id) {
   const review = reviews.find((item) => String(item.id) === String(id));
   if (!review) return;
 
+  let cleanComment = review.comment || review.message || "";
+  const match = cleanComment.match(/^\[guide:(.+?)\]\s*/);
+  if (match) {
+    cleanComment = cleanComment.replace(match[0], "");
+  }
+
   if (replyReviewIdInput) replyReviewIdInput.value = id;
-  if (replyReviewTextPreview) replyReviewTextPreview.textContent = `"${review.comment || review.message || ""}"`;
+  if (replyReviewTextPreview) replyReviewTextPreview.textContent = `"${cleanComment}"`;
   if (replyReviewTextInput) replyReviewTextInput.value = review.reply || "";
 
   replyReviewModal?.showModal();
