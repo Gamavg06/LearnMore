@@ -132,9 +132,71 @@ document.querySelector("#resetPassword")?.addEventListener("click", async () => 
   }
 
   try {
-    if (supabaseReady) await sendPasswordResetEmail(auth, email);
+    if (supabaseReady) {
+      const redirectTo = window.location.origin + window.location.pathname;
+      await sendPasswordResetEmail(auth, email, redirectTo);
+    }
     setStatus(supabaseReady ? "Correo de recuperacion enviado." : "Modo local: cambia la contrasena registrandote de nuevo.");
   } catch (error) {
+    setStatus(readableAuthError(error));
+  }
+});
+
+// Listener para el evento de recuperación de contraseña de Supabase
+if (supabaseReady) {
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      console.log("Evento PASSWORD_RECOVERY detectado");
+      const loginForm = document.querySelector("#loginForm");
+      const resetBtn = document.querySelector("#resetPassword");
+      const updateForm = document.querySelector("#updatePasswordForm");
+
+      if (loginForm) loginForm.style.display = "none";
+      if (resetBtn) resetBtn.style.display = "none";
+      if (updateForm) updateForm.style.display = "block";
+
+      setStatus("Ingresa tu nueva contraseña.");
+    }
+  });
+}
+
+// Formulario para guardar la nueva contraseña
+document.querySelector("#updatePasswordForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const data = Object.fromEntries(new FormData(form));
+  const newPassword = String(data.newPassword || "").trim();
+
+  if (!newPassword || newPassword.length < 6) {
+    setStatus("La contraseña debe tener al menos 6 caracteres.");
+    return;
+  }
+
+  try {
+    setStatus("Actualizando contraseña...");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+
+    setStatus("Contraseña actualizada con éxito. Iniciando sesión...");
+
+    // Obtener información del usuario para restaurar sesión y redirigir
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+
+    let role = "user";
+    if (user) {
+      const profile = await getUserProfile(user.id);
+      role = profile?.role || "user";
+      setLocalSession({ email: user.email, name: profile?.name || "Usuario", role });
+    }
+
+    addActivity({ type: "auth", text: `Contraseña recuperada: ${user.email}` });
+
+    setTimeout(() => {
+      window.location.href = role === "admin" || user?.email?.includes("admin") ? "Admin/admin.html" : "index.html";
+    }, 1500);
+  } catch (error) {
+    console.error("Error al actualizar contraseña:", error);
     setStatus(readableAuthError(error));
   }
 });

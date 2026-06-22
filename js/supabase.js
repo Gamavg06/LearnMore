@@ -26,8 +26,23 @@ export const createUserWithEmailAndPassword = (...args) => {
 };
 
 export const sendPasswordResetEmail = (...args) => {
-  const email = args.length === 1 ? args[0] : args[1];
-  return supabase.auth.resetPasswordForEmail(email);
+  let email;
+  let redirectTo;
+  if (typeof args[0] === 'object' && typeof args[1] === 'string') {
+    email = args[1];
+    redirectTo = args[2];
+  } else {
+    email = args[0];
+    redirectTo = args[1];
+  }
+
+  const options = {};
+  if (redirectTo) {
+    options.redirectTo = redirectTo;
+  } else if (typeof window !== 'undefined') {
+    options.redirectTo = window.location.origin + window.location.pathname;
+  }
+  return supabase.auth.resetPasswordForEmail(email, options);
 };
 
 export const signOut = () => supabase.auth.signOut();
