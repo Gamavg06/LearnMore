@@ -1,6 +1,6 @@
-import { initTheme } from "./theme.js";
-import { initLanguage, translate, translateDynamic } from "./language.js";
-import { supabase, supabaseReady } from './supabase.js';
+import { initTheme } from "../js/theme.js";
+import { initLanguage, translate, translateDynamic } from "../js/language.js";
+import { supabase, supabaseReady } from '../js/supabase.js';
 import {
   subscribeGuides,
   subscribeCareers,
@@ -22,7 +22,7 @@ import {
   deleteReview,
   baseCareerOptions,
   getLocalSession,
-} from "./guides.js";
+} from "../js/guides.js";
 
 initTheme();
 initLanguage();
@@ -104,19 +104,19 @@ if (isAdminLocal) {
     }
   }, 100);
 } else if (supabaseReady) {
-supabase.auth.onAuthStateChange((event, nextSession) => {
-     if (nextSession?.user) {
-       getUserProfile(nextSession.user.id).then((profile) => {
+  supabase.auth.onAuthStateChange((event, nextSession) => {
+    if (nextSession?.user) {
+      getUserProfile(nextSession.user.id).then((profile) => {
         const isAdmin = profile?.role === "admin" || nextSession.user.email?.includes("admin");
-        if (!isAdmin) window.location.href = "login.html";
+        if (!isAdmin) window.location.href = "../login.html";
       }).catch(() => {
-        if (!nextSession.user.email?.includes("admin")) window.location.href = "login.html";
+        if (!nextSession.user.email?.includes("admin")) window.location.href = "../login.html";
       });
     }
-    if (event === "SIGNED_OUT") window.location.href = "login.html";
+    if (event === "SIGNED_OUT") window.location.href = "../login.html";
   });
 } else {
-  if (!session || session.role !== "admin") window.location.href = "login.html";
+  if (!session || session.role !== "admin") window.location.href = "../login.html";
 }
 
 document.querySelectorAll(".admin-tab").forEach((button) => {
@@ -130,7 +130,7 @@ document.querySelector("#logoutBtn")?.addEventListener("click", async () => {
     console.warn("Logout error:", e);
   }
   sessionStorage.removeItem("learnmore.session");
-  window.location.href = "login.html";
+  window.location.href = "../login.html";
 });
 
 document.querySelector("#guideForm")?.addEventListener("submit", async (event) => {
@@ -412,8 +412,6 @@ if (guideListEl) {
     }
   });
 }
-
-
 
 function fillGuide(id) {
   const guide = guides.find((item) => String(item.id) === String(id));
@@ -773,7 +771,6 @@ function formatRelativeTime(dateVal) {
   if (diffDays === 1) return translate("nav.home") === "Inicio" ? "Ayer" : "Yesterday";
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-
 
 async function getUserProfile(userId) {
   const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();

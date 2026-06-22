@@ -18,11 +18,13 @@ Sistema de Guia/
   index.html           # Sitio público principal
   login.html           # Pantalla de inicio de sesión
   register.html        # Registro
-  admin.html           # Panel administrativo
   profile.html         # Perfil de usuario
+  Admin/               # Subcarpeta de administración
+    admin.html         # Panel administrativo
+    admin.css          # Estilos admin
+    admin.js           # Lógica admin
   css/
     style.css          # Estilos público
-    admin.css          # Estilos admin
     auth.css           # Estilos autenticación
     profile.css        # Estilos perfil
     responsive.css
@@ -252,10 +254,10 @@ En `functions/index.js`:
 **Login (`#loginForm`)**
 - Valida `email` y `password`.
 - Caso admin local (fallback):
-  - `admin@learnmore.local` / `admin123` → guarda usuario local admin y manda a `admin.html`.
+  - `admin@learnmore.local` / `admin123` → guarda usuario local admin y manda a `Admin/admin.html`.
 - Si Supabase:
   - `signInWithEmailAndPassword`
-  - carga rol desde `users` (perfil) y redirecciona a `admin.html` si es admin.
+  - carga rol desde `users` (perfil) y redirecciona a `Admin/admin.html` si es admin.
 - Si local:
   - busca en `localUsers()` por `email` y `password`.
 

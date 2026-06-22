@@ -91,7 +91,7 @@ document.querySelector("#loginForm")?.addEventListener("submit", async (event) =
     saveLocalUser({ id: email, name: "Administrador", email, password, role: "admin" });
     setLocalSession({ email, name: "Administrador", role: "admin" });
     addActivity({ type: "auth", text: `Inicio de sesion local de administrador: ${email}` });
-    window.location.href = "admin.html";
+    window.location.href = "Admin/admin.html";
     return;
   }
 
@@ -115,7 +115,7 @@ document.querySelector("#loginForm")?.addEventListener("submit", async (event) =
     }
 
     addActivity({ type: "auth", text: `Inicio de sesion: ${email}` });
-    window.location.href = role === "admin" || email.includes("admin") ? "admin.html" : "index.html";
+    window.location.href = role === "admin" || email.includes("admin") ? "Admin/admin.html" : "index.html";
   } catch (error) {
     console.error("Error capturado en Login:", error);
     setStatus(readableAuthError(error));

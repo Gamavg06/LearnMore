@@ -568,7 +568,7 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .danger-btn:hover {
-  background: rgba(251, 113, 133, 0.1);
+  background: rgba(251, 113, 133, 0.1;
   border-color: var(--danger);
 }
 
