@@ -22,7 +22,11 @@ initLanguage();
 
 const status = document.querySelector("#authStatus");
 
-document.addEventListener("DOMContentLoaded", initMatriculaAutofill);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initMatriculaAutofill);
+} else {
+  initMatriculaAutofill();
+}
 
 document.querySelector("#registerForm")?.addEventListener("submit", async (event) => {
   event.preventDefault();

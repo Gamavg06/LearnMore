@@ -7,7 +7,7 @@ let guides = [];
 let selectedStars = 0;
 let activeTab = 'platform';
 
-document.addEventListener('DOMContentLoaded', async function () {
+function init() {
   subscribeReviews((items) => {
     reviews = items;
     renderReviews();
@@ -57,7 +57,10 @@ document.addEventListener('DOMContentLoaded', async function () {
       submitReview(starBtns);
     });
   }
-});
+}
+
+// Ejecutar inicialización inmediatamente
+init();
 
 function highlightStars(btns, n) {
   btns.forEach(b => {
