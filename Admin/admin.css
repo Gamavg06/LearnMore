@@ -944,3 +944,109 @@ input[type="file"]::file-selector-button:hover {
   background: rgba(124, 58, 237, 0.4);
 }
 
+/* Carousel VIP styles for Admin Panel */
+.reviews-carousel-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  width: 100%;
+}
+
+.reviews-carousel-viewport {
+  flex: 1;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  display: flex;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  padding: 0.5rem 0;
+}
+
+.reviews-carousel-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.reviews-carousel-track {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  position: relative;
+}
+
+.reviews-carousel-track .list-item {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  box-sizing: border-box;
+}
+
+@media (min-width: 992px) {
+  .reviews-carousel-track .list-item {
+    flex: 0 0 calc(50% - 0.75rem);
+  }
+}
+
+.carousel-nav-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.carousel-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+  transform: scale(1.08);
+}
+
+.carousel-nav-btn:active {
+  transform: scale(0.92);
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  padding: 0;
+  outline: none;
+}
+
+.carousel-dot:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.carousel-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  width: 20px;
+  border-radius: 999px;
+}
+
+

@@ -66,9 +66,16 @@
           </div>
           <p class="form-note" id="guideStatus"></p>
         </form>
-        <section class="admin-card">
+        <section class="admin-card" style="overflow: hidden;">
           <h2 data-i18n="admin.viewPublished">Guias publicadas</h2>
-          <div class="admin-list" id="guideList"></div>
+          <div class="reviews-carousel-container" style="margin-top: 1.5rem;">
+            <button class="carousel-nav-btn prev" id="prevGuideBtn" type="button" aria-label="Anterior">⟨</button>
+            <div class="reviews-carousel-viewport" id="guidesCarouselViewport">
+              <div id="guideList" class="reviews-carousel-track"></div>
+            </div>
+            <button class="carousel-nav-btn next" id="nextGuideBtn" type="button" aria-label="Siguiente">⟩</button>
+          </div>
+          <div class="carousel-indicators" id="guidesCarouselIndicators"></div>
         </section>
       </div>
     </section>

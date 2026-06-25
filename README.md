@@ -512,6 +512,14 @@ Navegador: http://localhost:5500/index.html
   - Modificada la renderización del gráfico de popularidad (`renderPopularityChart`) eliminando el límite de 5 elementos para listar todas las guías del sistema (incluyendo nuevas guías sin visitas) y agregando scroll vertical acotado a 380px.
 - **js/language.js**: Registradas traducciones para `"admin.confirmTitle"` y `"admin.deleteBtn"`.
 
+### [2026-06-25] Carrusel de Guías en el Panel Admin (SGNIA#26)
+- **Admin/admin.html**: Reestructurado el panel de "Guias publicadas" agregando el viewport del carrusel, botones de navegación e indicadores de puntos (dots).
+- **Admin/admin.css**: Añadidos los estilos del carrusel adaptados para la consola de administración (ocultación de scrollbars, navegación hover, dots y comportamiento responsivo con 2 tarjetas en resoluciones grandes).
+- **Admin/admin.js**:
+  - Implementada la lógica de control del carrusel (`setupGuidesCarouselEvents`, `setupGuidesCarouselIndicators`, `syncGuidesCarouselDots`).
+  - Sincronizado el scroll y la generación de indicadores cada vez que las guías se actualizan, cargan o editan.
+
+
 
 
 
