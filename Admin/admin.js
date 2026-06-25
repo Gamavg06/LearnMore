@@ -250,12 +250,11 @@ function renderPopularityChart() {
 
   // Sort guides by views descending
   const sortedGuides = [...guides].sort((a, b) => (Number(b.views) || 0) - (Number(a.views) || 0));
-  const topGuides = sortedGuides.slice(0, 5);
-  const maxViews = Math.max(...topGuides.map(g => Number(g.views) || 0), 1);
+  const maxViews = Math.max(...sortedGuides.map(g => Number(g.views) || 0), 1);
 
   chartContainer.innerHTML = `
-    <div class="popularity-chart-list" style="display: flex; flex-direction: column; gap: 1.25rem; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem;">
-      ${topGuides.map(guide => {
+    <div class="popularity-chart-list" style="display: flex; flex-direction: column; gap: 1.25rem; background: rgba(255, 255, 255, 0.01); border: 1px solid rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem; max-height: 380px; overflow-y: auto; padding-right: 0.5rem;">
+      ${sortedGuides.map(guide => {
         const viewsCount = Number(guide.views) || 0;
         const percentage = Math.max((viewsCount / maxViews) * 100, 3);
         
@@ -402,7 +401,8 @@ if (guideListEl) {
     const delBtn = e.target.closest("[data-delete-guide]");
     if (delBtn) {
       console.log('[admin] Click delete guide, id:', delBtn.dataset.deleteGuide);
-      if (confirm(translate("profile.confirmDelete"))) {
+      const confirmed = await showConfirmModal(translate("admin.confirmTitle"), translate("profile.confirmDelete"));
+      if (confirmed) {
         try {
           await deleteGuide(delBtn.dataset.deleteGuide);
         } catch (error) {
@@ -468,7 +468,8 @@ if (careerListEl) {
 
     const delBtn = e.target.closest("[data-delete-career]");
     if (delBtn && careerListEl.contains(delBtn)) {
-      if (confirm(translate("profile.confirmDelete"))) {
+      const confirmed = await showConfirmModal(translate("admin.confirmTitle"), translate("profile.confirmDelete"));
+      if (confirmed) {
         try {
           await deleteCareer(delBtn.dataset.deleteCareer);
         } catch (error) {
@@ -717,7 +718,8 @@ if (userListEl) {
 
     const delBtn = e.target.closest("[data-delete-user]");
     if (delBtn && userListEl.contains(delBtn)) {
-      if (confirm(translate("profile.confirmDelete"))) {
+      const confirmed = await showConfirmModal(translate("admin.confirmTitle"), translate("profile.confirmDelete"));
+      if (confirmed) {
         try {
           await deleteUser(delBtn.dataset.deleteUser);
         } catch (error) {
@@ -862,7 +864,8 @@ if (reviewListEl) {
 
     const delBtn = e.target.closest("[data-delete-review]");
     if (delBtn && reviewListEl.contains(delBtn)) {
-      if (confirm(translate("profile.confirmDelete"))) {
+      const confirmed = await showConfirmModal(translate("admin.confirmTitle"), translate("profile.confirmDelete"));
+      if (confirmed) {
         try {
           await deleteReview(delBtn.dataset.deleteReview);
         } catch (error) {
@@ -902,6 +905,53 @@ function replyToReviewPrompt(id) {
 function closeReplyModal() {
   replyReviewModal?.close();
   replyReviewForm?.reset();
+}
+
+function showConfirmModal(title, message) {
+  return new Promise((resolve) => {
+    const modal = document.querySelector("#confirmModal");
+    const titleEl = document.querySelector("#confirmModalTitle");
+    const messageEl = document.querySelector("#confirmModalMessage");
+    const confirmBtn = document.querySelector("#confirmModalConfirmBtn");
+    const cancelBtn = document.querySelector("#confirmModalCancelBtn");
+    const closeBtn = document.querySelector("#closeConfirmModal");
+
+    if (!modal || !titleEl || !messageEl || !confirmBtn) {
+      resolve(confirm(message));
+      return;
+    }
+
+    titleEl.textContent = "⚠️ " + (title || translate("admin.confirmTitle") || "Confirmar Acción");
+    messageEl.textContent = message;
+    confirmBtn.textContent = translate("admin.deleteBtn") || "Eliminar";
+    if (cancelBtn) cancelBtn.textContent = translate("admin.cancelButton") || "Cancelar";
+
+    const cleanup = () => {
+      confirmBtn.removeEventListener("click", onConfirm);
+      cancelBtn?.removeEventListener("click", onCancel);
+      closeBtn?.removeEventListener("click", onCancel);
+      modal.removeEventListener("close", onCancel);
+    };
+
+    const onConfirm = () => {
+      cleanup();
+      modal.close();
+      resolve(true);
+    };
+
+    const onCancel = () => {
+      cleanup();
+      modal.close();
+      resolve(false);
+    };
+
+    confirmBtn.addEventListener("click", onConfirm);
+    cancelBtn?.addEventListener("click", onCancel);
+    closeBtn?.addEventListener("click", onCancel);
+    modal.addEventListener("close", onCancel);
+
+    modal.showModal();
+  });
 }
 
 if (closeReplyReviewModalBtn) {

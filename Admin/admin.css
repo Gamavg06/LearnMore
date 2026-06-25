@@ -892,3 +892,55 @@ input[type="file"]::file-selector-button:hover {
   transform: translateX(4px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.18);
 }
+
+/* Confirm Modal Custom styles */
+#confirmModal {
+  border: 1px solid rgba(244, 63, 94, 0.2);
+  box-shadow: var(--shadow), 0 0 25px rgba(244, 63, 94, 0.1);
+}
+
+[data-theme="light"] #confirmModal {
+  border: 1px solid rgba(225, 29, 72, 0.15);
+}
+
+.confirm-btn-danger {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  border: none;
+  color: white !important;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+  font-weight: 800;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.confirm-btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.5);
+  background: linear-gradient(135deg, #ff4d6d, #f12c56);
+}
+
+.confirm-btn-danger:active {
+  transform: translateY(0);
+}
+
+/* Scrollbar VIP para la lista de popularidad */
+.popularity-chart-list::-webkit-scrollbar {
+  width: 6px;
+}
+.popularity-chart-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 10px;
+}
+.popularity-chart-list::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.2);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+.popularity-chart-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.4);
+}
+

@@ -504,5 +504,14 @@ Navegador: http://localhost:5500/index.html
   - Sincronización del punto indicador activo durante el deslizamiento manual/scroll mediante un event listener en el viewport con retardo (debounce) de 100ms.
   - Reinicio automático del scroll a la posición inicial al alternar entre pestañas de plataforma/guías o al insertar una nueva reseña.
 
+### [2026-06-25] Modales VIP y Visualización Completa de Guías (SGNIA#25)
+- **Admin/admin.html**: Integrado modal de confirmación VIP (`#confirmModal`) utilizando la etiqueta `<dialog>` con diseño glassmorphic de cristal, textos traducidos y botones estilizados.
+- **Admin/admin.css**: Añadidos estilos para el botón de confirmación rojo neón (`.confirm-btn-danger`) y reglas CSS de scroll personalizado (`::-webkit-scrollbar`) para la lista de popularidad.
+- **Admin/admin.js**:
+  - Implementada la función asincrónica `showConfirmModal` para reemplazar los diálogos nativos `confirm()` al eliminar guías, carreras, usuarios y reseñas.
+  - Modificada la renderización del gráfico de popularidad (`renderPopularityChart`) eliminando el límite de 5 elementos para listar todas las guías del sistema (incluyendo nuevas guías sin visitas) y agregando scroll vertical acotado a 380px.
+- **js/language.js**: Registradas traducciones para `"admin.confirmTitle"` y `"admin.deleteBtn"`.
+
+
 
 

@@ -189,6 +189,29 @@
     </div>
   </dialog>
 
+  <!-- VIP Confirm Modal -->
+  <dialog class="custom-modal" id="confirmModal">
+    <div class="modal-content" style="gap: 1.5rem;">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 1rem;">
+        <h3 id="confirmModalTitle" style="color: var(--text); font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
+          ⚠️ Confirmar Acción
+        </h3>
+        <button class="modal-close-btn" id="closeConfirmModal" type="button" style="font-size: 1.4rem;">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 0.5rem 0;">
+        <p id="confirmModalMessage" style="margin: 0; line-height: 1.6; color: var(--text); opacity: 0.9; font-size: 1rem;"></p>
+      </div>
+      <div class="modal-actions" style="margin-top: 0.5rem; display: flex; gap: 1rem; justify-content: flex-end;">
+        <button class="btn-secondary" id="confirmModalCancelBtn" type="button" style="padding: 10px 20px; font-weight: 700; border-radius: 8px;">
+          Cancelar
+        </button>
+        <button class="confirm-btn-danger" id="confirmModalConfirmBtn" type="button">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <script>window.__LEARNMORE_SEND_CONTACT_EMAIL_URL__ = "https://brjywswhmqwokqemaosr.supabase.co/functions/v1/contact-email"; window.__LEARNMORE_SEND_REPLY_EMAIL_URL__ = "https://brjywswhmqwokqemaosr.supabase.co/functions/v1/send-reply-email";</script>
   <script type="module" src="admin.js"></script>
 </body>
