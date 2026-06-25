@@ -492,4 +492,17 @@ python -m http.server 5500
 
 Navegador: http://localhost:5500/index.html
 
+---
+
+## 12) Historial / Control de Cambios
+
+### [2026-06-25] Carrusel de Reseñas VIP (SGNIA#24)
+- **css/style.css**: Añadido `position: relative;` a `.reviews-carousel-track` para posibilitar el cálculo correcto de la propiedad `offsetLeft` de las tarjetas de reseñas.
+- **js/resenas.js**: Implementada la navegación interactiva y adaptabilidad del carrusel de opiniones:
+  - Botones de navegación Anterior (`⟨`) y Siguiente (`⟩`) que calculan dinámicamente el ancho de la tarjeta + gap para realizar el desplazamiento horizontal del viewport.
+  - Generación dinámica de puntos indicadores (dots) interactivos según la cantidad de tarjetas visibles por categoría.
+  - Sincronización del punto indicador activo durante el deslizamiento manual/scroll mediante un event listener en el viewport con retardo (debounce) de 100ms.
+  - Reinicio automático del scroll a la posición inicial al alternar entre pestañas de plataforma/guías o al insertar una nueva reseña.
+
+
 

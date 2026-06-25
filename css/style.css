@@ -576,3 +576,126 @@ footer {
   border-color: rgba(251, 191, 36, 0.4) !important;
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.2) !important;
 }
+
+/* Reviews Carousel VIP styles */
+.reviews-carousel-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  position: relative;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.reviews-carousel-viewport {
+  flex: 1;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  display: flex;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  padding: 0.5rem 0;
+}
+
+.reviews-carousel-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.reviews-carousel-track {
+  display: flex;
+  gap: 1.5rem;
+  width: 100%;
+  position: relative;
+}
+
+.reviews-carousel-track .review-card {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.015);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.reviews-carousel-track .review-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+@media (min-width: 768px) {
+  .reviews-carousel-track .review-card {
+    flex: 0 0 calc(50% - 0.75rem);
+  }
+}
+
+.carousel-nav-btn {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.carousel-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.25);
+  transform: scale(1.08);
+}
+
+.carousel-nav-btn:active {
+  transform: scale(0.92);
+}
+
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  padding: 0;
+  outline: none;
+}
+
+.carousel-dot:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.carousel-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  width: 20px;
+  border-radius: 999px;
+}

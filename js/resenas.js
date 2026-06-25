@@ -57,10 +57,113 @@ function init() {
       submitReview(starBtns);
     });
   }
+
+  setupCarouselEvents();
 }
 
 // Ejecutar inicialización inmediatamente
 init();
+
+function setupCarouselEvents() {
+  const viewport = document.getElementById('carouselViewport');
+  const prevBtn = document.getElementById('prevReviewBtn');
+  const nextBtn = document.getElementById('nextReviewBtn');
+  const list = document.getElementById('reviewsList');
+
+  if (!viewport || !prevBtn || !nextBtn || !list) return;
+
+  const scrollAmount = () => {
+    const card = list.querySelector('.review-card');
+    if (!card) return 300;
+    const cardWidth = card.offsetWidth;
+    const style = window.getComputedStyle(list);
+    const gap = parseFloat(style.columnGap || style.gap) || 24;
+    return cardWidth + gap;
+  };
+
+  prevBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    viewport.scrollBy({ left: -scrollAmount(), behavior: 'smooth' });
+  });
+
+  nextBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    viewport.scrollBy({ left: scrollAmount(), behavior: 'smooth' });
+  });
+
+  let scrollTimeout;
+  viewport.addEventListener('scroll', () => {
+    if (scrollTimeout) clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      syncCarouselDots();
+    }, 100);
+  });
+
+  window.addEventListener('resize', () => {
+    syncCarouselDots();
+  });
+}
+
+function setupCarouselIndicators() {
+  const viewport = document.getElementById('carouselViewport');
+  const list = document.getElementById('reviewsList');
+  const indicators = document.getElementById('carouselIndicators');
+  if (!viewport || !list || !indicators) return;
+
+  // Reset scroll to start
+  viewport.scrollLeft = 0;
+
+  const cards = Array.from(list.querySelectorAll('.review-card'));
+  if (!cards.length) {
+    indicators.innerHTML = '';
+    return;
+  }
+
+  indicators.innerHTML = cards.map((_, index) => {
+    return `<button class="carousel-dot ${index === 0 ? 'active' : ''}" data-index="${index}" type="button" aria-label="Ir a reseña ${index + 1}"></button>`;
+  }).join('');
+
+  const dots = indicators.querySelectorAll('.carousel-dot');
+  dots.forEach(dot => {
+    dot.addEventListener('click', function(e) {
+      e.preventDefault();
+      const index = parseInt(this.dataset.index);
+      const targetCard = cards[index];
+      if (targetCard) {
+        viewport.scrollTo({
+          left: targetCard.offsetLeft,
+          behavior: 'smooth'
+        });
+      }
+    });
+  });
+}
+
+function syncCarouselDots() {
+  const viewport = document.getElementById('carouselViewport');
+  const list = document.getElementById('reviewsList');
+  const indicators = document.getElementById('carouselIndicators');
+  if (!viewport || !list || !indicators) return;
+
+  const cards = Array.from(list.querySelectorAll('.review-card'));
+  if (!cards.length) return;
+
+  const scrollLeft = viewport.scrollLeft;
+  const firstCard = cards[0];
+  const cardWidth = firstCard.offsetWidth;
+  const style = window.getComputedStyle(list);
+  const gap = parseFloat(style.columnGap || style.gap) || 24;
+  const step = cardWidth + gap;
+
+  let activeIndex = Math.round(scrollLeft / step);
+  if (activeIndex < 0) activeIndex = 0;
+  if (activeIndex >= cards.length) activeIndex = cards.length - 1;
+
+  const dots = indicators.querySelectorAll('.carousel-dot');
+  dots.forEach((dot, idx) => {
+    dot.classList.toggle('active', idx === activeIndex);
+  });
+}
 
 function highlightStars(btns, n) {
   btns.forEach(b => {
@@ -138,6 +241,7 @@ function renderReviews() {
       ? (translate("profile.noReviews") !== "profile.noReviews" ? translate("profile.noReviews") : "No hay reseñas de la plataforma todavía.")
       : (translate("nav.home") === "Inicio" ? "No hay reseñas de guías todavía." : "No guide reviews yet.");
     list.innerHTML = `<p class="no-reviews">${emptyMsg}</p>`;
+    setupCarouselIndicators();
     return;
   }
 
@@ -188,6 +292,8 @@ function renderReviews() {
       </div>
       `;
     }).join('');
+
+  setupCarouselIndicators();
 }
 
 window.addEventListener("learnmore:language-change", () => {
