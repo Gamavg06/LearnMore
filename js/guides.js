@@ -87,68 +87,51 @@ async function subscribeSupabaseTable(tableName, fallback, callback) {
   const tablesWithCreatedAt = ["messages", "users", "activity", "reviews", "gmailMessages"];
   const orderByColumn = tablesWithCreatedAt.includes(tableName) ? 'created_at' : 'id';
   
-  if (optionalTables.includes(tableName)) {
-    // Intentar fetch; si falla con 404/42P01 simplemente usar fallback silencioso
+  const fetchData = async () => {
     try {
-      const { data: initialData, error } = await supabase
+      const { data, error } = await supabase
         .from(tableName)
         .select('*')
         .order(orderByColumn, { ascending: false });
 
       if (error) {
-        // Tabla no existe todavía — usar fallback sin spam de errores
-        callback(fallback);
-        return () => {};
+        if (optionalTables.includes(tableName)) {
+          callback(fallback);
+        } else {
+          console.error(`Error fetching ${tableName}:`, error);
+        }
+        return false;
       }
-
-      callback(initialData?.length ? initialData : fallback);
-
-      const channel = supabase
-        .channel(`public:${tableName}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, () => {
-          supabase.from(tableName).select('*').order(orderByColumn, { ascending: false })
-            .then(({ data, error }) => { if (!error) callback(data || []); });
-        })
-        .subscribe();
-
-      return () => supabase.removeChannel(channel);
+      callback(data?.length ? data : fallback);
+      return true;
     } catch (e) {
-      callback(fallback);
-      return () => {};
+      if (optionalTables.includes(tableName)) {
+        callback(fallback);
+      } else {
+        console.error(`Exception fetching ${tableName}:`, e);
+      }
+      return false;
     }
-  }
-  // ──────────────────────────────────────────────────────────────────────────
+  };
 
-  // Primero, obtener los datos actuales
-  const { data: initialData, error } = await supabase
-    .from(tableName)
-    .select('*')
-    .order(orderByColumn, { ascending: false });
+  // Carga inicial
+  await fetchData();
 
-  if (error) {
-    console.error(`Error fetching ${tableName}:`, error);
-    return localSubscribe(KEYS[tableName], fallback, callback);
-  }
-
-  // Si la tabla de carreras esta vacia, mantener las opciones base
-  callback(initialData?.length ? initialData : fallback);
+  // Polling fallback de 8 segundos si no hay replicación en tiempo real habilitada
+  const intervalId = setInterval(fetchData, 8000);
 
   // Configurar suscripción en tiempo real
   const channel = supabase
     .channel(`public:${tableName}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: tableName }, () => {
-      supabase
-        .from(tableName)
-        .select('*')
-        .order(orderByColumn, { ascending: false })
-        .then(({ data, error }) => {
-          if (!error) callback(data || []);
-          else console.error(`Error in real-time update for ${tableName}:`, error);
-        });
+      fetchData();
     })
     .subscribe();
 
-  return () => supabase.removeChannel(channel);
+  return () => {
+    clearInterval(intervalId);
+    supabase.removeChannel(channel);
+  };
 }
 
 function localUpsert(key, data) {

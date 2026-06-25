@@ -96,11 +96,23 @@ function submitReview(starBtns) {
     created_at: new Date().toISOString()
   };
 
-  saveReview(review).then(() => {
+  saveReview(review).then((id) => {
     document.getElementById('nameInput').value    = '';
     document.getElementById('commentInput').value = '';
     selectedStars = 0;
     updateStars(starBtns);
+
+    // Optimistic UI update: show the review instantly in the list
+    const optimisticReview = {
+      id,
+      ...review,
+      status: "nuevo",
+      reply: null
+    };
+    if (!reviews.some(r => String(r.id) === String(id))) {
+      reviews = [optimisticReview, ...reviews];
+      renderReviews();
+    }
   }).catch((error) => {
     alert("Error al guardar reseña: " + error.message);
   });
