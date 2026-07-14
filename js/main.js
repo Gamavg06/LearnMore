@@ -2,7 +2,6 @@ import { initTheme } from "./theme.js";
 import { initLanguage, applyLanguage, translate, translateDynamic } from "./language.js";
 import { supabaseReady, supabase, onAuthStateChanged } from "./supabase.js";
 import { subscribeGuides, subscribeCareers, saveMessage, getLocalCurrentUser, getLocalSession, baseCareerOptions, incrementGuideViews, subscribeReviews, saveReview } from "./guides.js";
-import { ejecutarMigracionAutomatica } from "./migrar.js";
 
 let guides = [];
 let careers = baseCareerOptions();
@@ -412,8 +411,7 @@ function updateSessionUi(isLoggedIn, isAdmin = false) {
   if (adminLink) adminLink.hidden = !isAdmin;
 
   document.querySelector("#createAccountBtn")?.toggleAttribute("hidden", isLoggedIn);
-  document.querySelector("#heroProfileBtn")?.toggleAttribute("hidden", !isLoggedIn);
-  document.querySelector("#heroProfileBtn")?.toggleAttribute("hidden", isAdmin);
+  document.querySelector("#heroProfileBtn")?.toggleAttribute("hidden", !isLoggedIn || isAdmin);
   if (typeof applyLanguage === "function") applyLanguage();
 }
 

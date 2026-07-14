@@ -1,11 +1,22 @@
 // js/resenas.js
-import { saveReview, subscribeReviews, subscribeGuides } from './guides.js';
+import { initTheme } from "./theme.js";
+import { initLanguage } from "./language.js";
+import { supabaseReady, supabase, onAuthStateChanged } from "./supabase.js";
+import { saveReview, subscribeReviews, subscribeGuides, getLocalCurrentUser, getLocalSession } from './guides.js';
 import { translate } from './language.js';
 
 let reviews = [];
 let guides = [];
 let selectedStars = 0;
 let activeTab = 'platform';
+
+initTheme();
+initLanguage();
+initSessionUi();
+
+document.querySelector("#menuToggle")?.addEventListener("click", () => {
+  document.querySelector("#navLinks")?.classList.toggle("open");
+});
 
 function init() {
   subscribeReviews((items) => {
@@ -192,15 +203,17 @@ function submitReview(starBtns) {
   }
   err.style.display = 'none';
 
+  const currentUser = getLocalCurrentUser();
   const review = {
     name,
     comment,
     stars: selectedStars,
+    email: currentUser?.email || "",
     created_at: new Date().toISOString()
   };
 
   saveReview(review).then((id) => {
-    document.getElementById('nameInput').value    = '';
+    document.getElementById('nameInput').value    = currentUser?.name || '';
     document.getElementById('commentInput').value = '';
     selectedStars = 0;
     updateStars(starBtns);
@@ -219,6 +232,60 @@ function submitReview(starBtns) {
   }).catch((error) => {
     alert("Error al guardar reseña: " + error.message);
   });
+}
+
+function initSessionUi() {
+  const session = getLocalSession();
+  const isAdminLocal = session && (session.role === "admin" || session.email === "admin@learnmore.local" || session.email?.includes("admin"));
+
+  if (session?.email) {
+    updateSessionUi(true, Boolean(isAdminLocal));
+    return;
+  }
+
+  if (supabaseReady) {
+    onAuthStateChanged((event, nextSession) => {
+      const isLoggedIn = Boolean(nextSession?.user);
+      if (isLoggedIn) {
+        getSupabaseUserProfile(nextSession.user.id).then((profile) => {
+          const isAdmin = profile?.role === "admin" || nextSession.user.email?.includes("admin");
+          updateSessionUi(true, isAdmin);
+        });
+      } else {
+        updateSessionUi(false, false);
+      }
+    });
+    return;
+  }
+
+  const user = getLocalCurrentUser();
+  updateSessionUi(Boolean(user), user?.role === "admin");
+}
+
+function updateSessionUi(isLoggedIn, isAdmin = false) {
+  const loginLink = document.querySelector("#loginNavLink");
+  const profileLink = document.querySelector("#profileNavLink");
+  const adminLink = document.querySelector("#adminNavLink");
+
+  if (loginLink) {
+    loginLink.hidden = isLoggedIn;
+    loginLink.textContent = translate("nav.login");
+    loginLink.href = "login.html";
+  }
+  if (profileLink) profileLink.hidden = !isLoggedIn || isAdmin;
+  if (adminLink) adminLink.hidden = !isAdmin;
+
+  const currentUser = getLocalCurrentUser();
+  const nameInput = document.getElementById('nameInput');
+  if (nameInput && currentUser?.name && !nameInput.value.trim()) {
+    nameInput.value = currentUser.name;
+  }
+}
+
+async function getSupabaseUserProfile(userId) {
+  const { data, error } = await supabase.from("users").select("*").eq("id", userId).single();
+  if (error) return null;
+  return data;
 }
 
 function starsHTML(n) {

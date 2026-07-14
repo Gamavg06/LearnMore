@@ -15,14 +15,13 @@ export async function ejecutarMigracionAutomatica() {
     for (const carrera of defaultCareers) {
       const { error } = await supabase.from("careers").upsert({
         id: carrera.id,
-        key: carrera.key,
         name: carrera.name,
-        desc: carrera.desc,
+        description: carrera.desc || carrera.description,
         color: carrera.color,
         updated_at: new Date().toISOString()
       });
       if (error) throw error;
-      console.log(`🔹 Carrera migrada con éxito: [${carrera.key.toUpperCase()}] ${carrera.name}`);
+      console.log(`🔹 Carrera migrada con éxito: [${carrera.id.toUpperCase()}] ${carrera.name}`);
     }
 
     // 2. Migrar todas las guías académicas predefinidas

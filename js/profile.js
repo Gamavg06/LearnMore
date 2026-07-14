@@ -166,7 +166,8 @@ function fillProfile(user) {
   const sidebarName = document.querySelector("#sidebarProfileName");
   if (sidebarName) sidebarName.textContent = user.name || user.email;
 
-  document.querySelector("#profileSummary").textContent = `${user.email || ""} - ${user.role || "user"}`;
+  const profileSummary = document.querySelector("#profileSummary");
+  if (profileSummary) profileSummary.textContent = `${user.email || ""} - ${user.role || "user"}`;
 }
 
 form?.career?.addEventListener("change", () => {

@@ -8,6 +8,7 @@
   <link rel="icon" href="assets/icons/Icono.png" type="image/png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="css/resenas.css">
 </head>
 <body>
   <nav class="site-nav">
@@ -35,7 +36,7 @@
       <div class="section-header">
         <span class="eyebrow" data-i18n="reviews.badge">Opiniones de la comunidad</span>
         <h2 data-i18n="reviews.title">Reseñas de usuarios</h2>
-        <p data-i18n="reviews.copy">Comparte tu experiencia con LEARNMORE y lee lo que otros estudiantes opinan.</p>
+        <p data-i18n="reviews.copy">Comparte tu experiencia con LEARNMORE and lee lo que otros estudiantes opinan.</p>
       </div>
 
       <div class="resenas-layout">
@@ -52,7 +53,7 @@
           </div>
           <textarea id="commentInput" data-i18n-placeholder="reviews.commentPlaceholder" placeholder="Cuéntanos tu experiencia..." rows="4"></textarea>
           <button id="submitBtn" class="submit-btn" type="button" data-i18n="reviews.submit">Publicar reseña</button>
-          <p id="errorMsg" class="error-msg" data-i18n="reviews.error"></p>
+          <p id="errorMsg" class="error-msg" data-i18n="reviews.error" style="display: none;">Completa todos los campos y selecciona tu calificación.</p>
         </div>
 
         <div class="reviews-list-container" style="flex: 2; display: flex; flex-direction: column; overflow: hidden;">
@@ -78,7 +79,6 @@
     <span data-i18n="footer.copy">Sistema de Guias de Aprendizaje. Plataforma academica administrable.</span>
   </footer>
 
-  <script type="module" src="js/main.js"></script>
   <script type="module" src="js/resenas.js"></script>
 </body>
 </html>

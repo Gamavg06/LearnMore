@@ -163,3 +163,69 @@
   font-size: 14px;
   padding: 2rem 0;
 }
+
+/* Premium Layout & Tabs Styles */
+.resenas-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+  margin-top: 2rem;
+}
+
+@media (min-width: 992px) {
+  .resenas-layout {
+    grid-template-columns: 350px 1fr;
+  }
+}
+
+.reviews-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow: hidden;
+}
+
+.reviews-tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.review-tab-btn {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.review-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.review-tab-btn.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-border-soft || rgba(0, 212, 255, 0.3));
+}
+
+/* Extra VIP improvements for star ratings inside the reviews list */
+.review-star {
+  color: #fbbf24;
+  margin-right: 1px;
+}
+
+.review-reply-box {
+  border-left: 3px solid var(--accent-3 || #10b981) !important;
+}
