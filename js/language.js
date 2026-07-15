@@ -469,6 +469,23 @@ export function translate(key, lang = getLanguage()) {
   return dictionary[lang][key] || key;
 }
 
+export async function translateWithGoogle(text, sl = "es", tl = "en") {
+  if (!text) return "";
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Google Translate HTTP error " + res.status);
+    const data = await res.json();
+    if (data && data[0]) {
+      const translated = data[0].map(item => item[0]).join("");
+      return translated;
+    }
+  } catch (error) {
+    console.warn("Google Translate call failed, falling back...", error);
+  }
+  return "";
+}
+
 const TRANSLATION_ENDPOINTS = [
   "https://translate.argosopentech.com/translate",
   "https://translate.terraprint.co/translate",
@@ -498,7 +515,15 @@ export async function translateDynamic(text, targetLang = getLanguage()) {
     return text;
   }
 
-  // Loop through public LibreTranslate instances with failover
+  // 1. Try Google Translate first (very stable & fast)
+  const googleTrans = await translateWithGoogle(text, "es", "en");
+  if (googleTrans) {
+    if (!dictionary[targetLang]) dictionary[targetLang] = {};
+    dictionary[targetLang][text] = googleTrans;
+    return googleTrans;
+  }
+
+  // 2. Fallback to LibreTranslate endpoints if Google fails
   for (const endpoint of TRANSLATION_ENDPOINTS) {
     try {
       const res = await fetch(endpoint, {
@@ -544,30 +569,35 @@ export async function translateToEnglish(text) {
     return text;
   }
   
-  let translated = "";
-  for (const endpoint of TRANSLATION_ENDPOINTS) {
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        body: JSON.stringify({
-          q: text,
-          source: "es",
-          target: "en",
-          format: "text"
-        }),
-        headers: {
-          "Content-Type": "application/json"
+  // 1. Try Google Translate
+  let translated = await translateWithGoogle(text, "es", "en");
+  
+  // 2. Fallback to LibreTranslate
+  if (!translated) {
+    for (const endpoint of TRANSLATION_ENDPOINTS) {
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          body: JSON.stringify({
+            q: text,
+            source: "es",
+            target: "en",
+            format: "text"
+          }),
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.translatedText) {
+            translated = data.translatedText;
+            break;
+          }
         }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.translatedText) {
-          translated = data.translatedText;
-          break;
-        }
+      } catch (e) {
+        console.warn("Translation endpoint failed:", e);
       }
-    } catch (e) {
-      console.warn("Translation endpoint failed:", e);
     }
   }
   

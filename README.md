@@ -546,6 +546,12 @@ Navegador: http://localhost:5500/index.html
   - Se integró la auto-traducción en el formulario de creación/edición de guías (`#guideForm` submit). Ahora, al guardar una guía, sus textos (`title`, `desc`, `detail`, `topics`) se traducen a inglés de forma automática y se almacenan en formato `[es]...[en]...` en Supabase.
   - Se adaptó la carga del formulario (`fillGuide`) para extraer únicamente el texto en español para una edición limpia y libre de etiquetas técnicas.
 
+### [2026-07-15] Integración de API de Google Translate (SGNIA#31)
+- **js/language.js**:
+  - Se implementó la función `translateWithGoogle` utilizando el endpoint gratuito de la API de Google Translate (`translate_a/single?client=gtx`).
+  - Se actualizó `translateDynamic` y `translateToEnglish` para utilizar Google Translate como motor de traducción principal y ultra-veloz, manteniendo las instancias públicas de LibreTranslate como un robusto sistema de respaldo alternativo.
+
+
 
 
 
