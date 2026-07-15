@@ -546,12 +546,9 @@ export async function saveUser(data) {
     return result;
   }
 
-// ── FIX: limpiar campos que no van a la BD (bio, phone, photoData son solo locales) ──
+// ── FIX: limpiar campos que no van a la BD (password y photoFile son solo locales) ──
    delete payload.password;
    delete payload.photoFile;
-   delete payload.bio;
-   delete payload.phone;
-   delete payload.photoData;
 
   const timestamp = new Date().toISOString();
 

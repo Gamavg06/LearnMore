@@ -519,6 +519,10 @@ Navegador: http://localhost:5500/index.html
   - Implementada la lógica de control del carrusel (`setupGuidesCarouselEvents`, `setupGuidesCarouselIndicators`, `syncGuidesCarouselDots`).
   - Sincronizado el scroll y la generación de indicadores cada vez que las guías se actualizan, cargan o editan.
 
+### [2026-07-15] Persistencia Completa de Perfil en la Nube (SGNIA#27)
+- **js/guides.js**: Modificada la función `saveUser` para que no elimine las propiedades `phone`, `bio` y `photoData` del payload antes de upsertar el registro en Supabase. Ahora que la base de datos cuenta con estas columnas (incluyendo la versión camelCase `"photoData"`), la información se sincroniza permanentemente en la nube además del fallback local en `localStorage`.
+
+
 
 
 
