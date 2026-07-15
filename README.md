@@ -537,6 +537,16 @@ Navegador: http://localhost:5500/index.html
 - **js/auth.js**:
   - Se corrigió el flujo de recuperación de contraseña (`#resetPassword` click listener) para evaluar la respuesta de la función `sendPasswordResetEmail` y lanzar el error en caso de que la API de Supabase falle.
 
+### [2026-07-15] Sincronización y Traducción Automática de Guías de Aprendizaje (SGNIA#30)
+- **js/language.js**:
+  - Se actualizó `translateDynamic` para soportar la detección y extracción de cadenas de texto encapsuladas con prefijos de idioma (`[es]` y `[en]`). Esto evita llamadas a APIs externas en tiempo de ejecución.
+  - Se agregaron y exportaron funciones para la traducción a inglés asíncrona (`translateToEnglish`, `translateArrayToEnglish`) y la extracción del contenido original en español (`getSpanishText`).
+- **Admin/admin.js**:
+  - Se actualizaron los imports del panel.
+  - Se integró la auto-traducción en el formulario de creación/edición de guías (`#guideForm` submit). Ahora, al guardar una guía, sus textos (`title`, `desc`, `detail`, `topics`) se traducen a inglés de forma automática y se almacenan en formato `[es]...[en]...` en Supabase.
+  - Se adaptó la carga del formulario (`fillGuide`) para extraer únicamente el texto en español para una edición limpia y libre de etiquetas técnicas.
+
+
 
 
 

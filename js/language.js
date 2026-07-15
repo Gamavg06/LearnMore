@@ -477,7 +477,19 @@ const TRANSLATION_ENDPOINTS = [
 
 export async function translateDynamic(text, targetLang = getLanguage()) {
   if (!text) return text;
+
+  // Check for inline language tags: [es]Texto[en]Text
+  const esMatch = text.match(/\[es\]([\s\S]*?)(?:\[|$)/i);
+  const enMatch = text.match(/\[en\]([\s\S]*?)(?:\[|$)/i);
   
+  if (esMatch || enMatch) {
+    if (targetLang === "es") {
+      return esMatch ? esMatch[1].trim() : text;
+    } else {
+      return enMatch ? enMatch[1].trim() : (esMatch ? esMatch[1].trim() : text);
+    }
+  }
+
   if (dictionary[targetLang] && dictionary[targetLang][text]) {
     return dictionary[targetLang][text];
   }
@@ -517,4 +529,56 @@ export async function translateDynamic(text, targetLang = getLanguage()) {
   }
 
   return text;
+}
+
+export function getSpanishText(text) {
+  if (!text) return "";
+  const match = text.match(/\[es\]([\s\S]*?)(?:\[|$)/i);
+  return match ? match[1].trim() : text;
+}
+
+export async function translateToEnglish(text) {
+  if (!text) return "";
+  // Check if it already has tags
+  if (text.includes("[es]") || text.includes("[en]")) {
+    return text;
+  }
+  
+  let translated = "";
+  for (const endpoint of TRANSLATION_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        body: JSON.stringify({
+          q: text,
+          source: "es",
+          target: "en",
+          format: "text"
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.translatedText) {
+          translated = data.translatedText;
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn("Translation endpoint failed:", e);
+    }
+  }
+  
+  if (!translated) {
+    translated = text; // fallback to original
+  }
+  
+  return `[es]${text}[en]${translated}`;
+}
+
+export async function translateArrayToEnglish(arr) {
+  if (!Array.isArray(arr)) return arr;
+  return Promise.all(arr.map(item => translateToEnglish(item)));
 }

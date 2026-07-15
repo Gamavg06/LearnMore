@@ -1,5 +1,5 @@
 import { initTheme } from "../js/theme.js";
-import { initLanguage, translate, translateDynamic } from "../js/language.js";
+import { initLanguage, translate, translateDynamic, getSpanishText, translateToEnglish, translateArrayToEnglish } from "../js/language.js";
 import { supabase, supabaseReady } from '../js/supabase.js';
 import {
   subscribeGuides,
@@ -151,7 +151,18 @@ document.querySelector("#guideForm")?.addEventListener("submit", async (event) =
   data.sem = Number(data.sem || 1);
 
   try {
-    if (statusElement) statusElement.textContent = translate("admin.savingGuide");
+    if (statusElement) statusElement.textContent = translate("admin.savingGuide") || "Guardando guía...";
+
+    // Auto-translate fields to [es]...[en]... format
+    data.title = await translateToEnglish(data.title);
+    data.desc = await translateToEnglish(data.desc);
+    if (data.detail) {
+      data.detail = await translateToEnglish(data.detail);
+    }
+    if (data.topics && data.topics.length > 0) {
+      data.topics = await translateArrayToEnglish(data.topics);
+    }
+
     await saveGuide(data);
     form.reset();
     if (form.id) form.id.value = "";
@@ -423,15 +434,15 @@ function fillGuide(id) {
   if (!form) return;
 
   form.id.value = guide.id;
-  if (form.title) form.title.value = guide.title || "";
-  if (form.desc) form.desc.value = guide.desc || "";
-  if (form.detail) form.detail.value = guide.detail || "";
+  if (form.title) form.title.value = getSpanishText(guide.title || "");
+  if (form.desc) form.desc.value = getSpanishText(guide.desc || "");
+  if (form.detail) form.detail.value = getSpanishText(guide.detail || "");
   if (form.career) {
     // Soporta "general" (todas las carreras) si así fue guardado.
     form.career.value = guide.career || guide.careerCode || "";
   }
   if (form.sem) form.sem.value = guide.sem || "";
-  if (form.topics) form.topics.value = (guide.topics || []).join(", ");
+  if (form.topics) form.topics.value = (guide.topics || []).map(t => getSpanishText(t)).join(", ");
   if (form.fileUrl) form.fileUrl.value = guide.fileUrl || "";
 
   switchView("guides");
