@@ -2,11 +2,12 @@
 import { initTheme } from "./theme.js";
 import { initLanguage } from "./language.js";
 import { supabaseReady, supabase, onAuthStateChanged } from "./supabase.js";
-import { saveReview, subscribeReviews, subscribeGuides, getLocalCurrentUser, getLocalSession } from './guides.js';
+import { saveReview, subscribeReviews, subscribeGuides, getLocalCurrentUser, getLocalSession, subscribeUsers } from './guides.js';
 import { translate } from './language.js';
 
 let reviews = [];
 let guides = [];
+let users = [];
 let selectedStars = 0;
 let activeTab = 'platform';
 
@@ -26,6 +27,11 @@ function init() {
 
   subscribeGuides((items) => {
     guides = items;
+    renderReviews();
+  });
+
+  subscribeUsers((items) => {
+    users = items;
     renderReviews();
   });
 
@@ -336,10 +342,16 @@ function renderReviews() {
         }
       }
 
+      const matchedUser = users.find(u => u.email === r.email);
+      let avatarHtml = `<div class="review-avatar">${(r.name || 'A').charAt(0).toUpperCase()}</div>`;
+      if (matchedUser && matchedUser.photoData) {
+        avatarHtml = `<div class="review-avatar" style="background: none; border: none; padding: 0; overflow: hidden;"><img src="${matchedUser.photoData}" alt="${r.name || 'User'}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
+      }
+
       return `
       <div class="review-card">
         <div class="review-header">
-          <div class="review-avatar">${(r.name || 'A').charAt(0).toUpperCase()}</div>
+          ${avatarHtml}
           <div class="review-meta">
             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
               <strong>${r.name || translate("profile.anonymous")}</strong>

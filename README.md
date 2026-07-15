@@ -522,6 +522,14 @@ Navegador: http://localhost:5500/index.html
 ### [2026-07-15] Persistencia Completa de Perfil en la Nube (SGNIA#27)
 - **js/guides.js**: Modificada la función `saveUser` para que no elimine las propiedades `phone`, `bio` y `photoData` del payload antes de upsertar el registro en Supabase. Ahora que la base de datos cuenta con estas columnas (incluyendo la versión camelCase `"photoData"`), la información se sincroniza permanentemente en la nube además del fallback local en `localStorage`.
 
+### [2026-07-15] Fotos de Perfil de Usuarios en Reseñas (SGNIA#28)
+- **js/resenas.js**:
+  - Se importó y configuró la suscripción en tiempo real a los usuarios (`subscribeUsers`).
+  - Se modificó la renderización de las reseñas (`renderReviews`) para buscar el usuario autor (coincidiendo el correo electrónico) y cargar dinámicamente su avatar `"photoData"` (imagen) en lugar de las iniciales.
+- **Admin/admin.js**:
+  - Se actualizó la vista de reseñas en el panel administrativo (`renderReviews`) para integrar un pequeño contenedor circular de avatar que carga la imagen del usuario (o inicial de respaldo) al lado del nombre del remitente.
+
+
 
 
 
