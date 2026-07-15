@@ -556,6 +556,17 @@ Navegador: http://localhost:5500/index.html
   - Se actualizó la carga del perfil (`loadSupabaseProfile`) para que los valores vacíos del caché local (`localStorage`) no sobrescriban la foto de perfil ni los campos válidos cargados desde Supabase.
   - Se modificó el evento de guardado del perfil (`submit` form) para conservar la foto existente del usuario en caso de que el formulario se envíe sin subir un nuevo archivo de imagen, previniendo borrados accidentales de avatares.
 
+### [2026-07-15] Unificación Casing de Columna de Foto de Perfil (SGNIA#33)
+- **js/guides.js**:
+  - Se actualizó `saveUser` para duplicar y guardar la foto en las propiedades `photoData` (camelCase) y `photodata` (all lowercase), asegurando que se persista correctamente en el servidor independientemente del cacheado de esquema de PostgREST.
+- **js/profile.js**:
+  - Se actualizó `loadSupabaseProfile` para evaluar y leer de manera unificada las propiedades `photoData` y `photodata`.
+- **js/resenas.js**:
+  - Se actualizó la obtención de foto de perfil del autor de la reseña para admitir tanto `photoData` como `photodata`.
+- **Admin/admin.js**:
+  - Se actualizó la visualización de avatares en administración para admitir tanto `photoData` como `photodata`.
+
+
 
 
 

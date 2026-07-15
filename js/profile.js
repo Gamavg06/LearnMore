@@ -239,6 +239,12 @@ async function loadSupabaseProfile(user) {
     return { id: user.id, email: user.email, name: user.email, role: "user", ...localFields };
   }
   const merged = { id: user.id, email: user.email, ...data };
+  
+  // Unificar photoData y photodata
+  const photo = merged.photoData || merged.photodata || localFields.photoData || localFields.photodata || "";
+  merged.photoData = photo;
+  merged.photodata = photo;
+
   for (const key in localFields) {
     if (localFields[key] && !merged[key]) {
       merged[key] = localFields[key];

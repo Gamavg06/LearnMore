@@ -833,8 +833,8 @@ function renderReviews() {
 
             const matchedUser = users.find((u) => u.email === review.email);
             let avatarHtml = `<div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; margin-right: 6px;">${(review.name || 'A').charAt(0).toUpperCase()}</div>`;
-            if (matchedUser && matchedUser.photoData) {
-              avatarHtml = `<div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; margin-right: 6px;"><img src="${matchedUser.photoData}" alt="${review.name || 'User'}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
+            if (matchedUser && (matchedUser.photoData || matchedUser.photodata)) {
+              avatarHtml = `<div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex-shrink: 0; margin-right: 6px;"><img src="${matchedUser.photoData || matchedUser.photodata}" alt="${review.name || 'User'}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
             }
 
             return `

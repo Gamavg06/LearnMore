@@ -344,8 +344,8 @@ function renderReviews() {
 
       const matchedUser = users.find(u => u.email === r.email);
       let avatarHtml = `<div class="review-avatar">${(r.name || 'A').charAt(0).toUpperCase()}</div>`;
-      if (matchedUser && matchedUser.photoData) {
-        avatarHtml = `<div class="review-avatar" style="background: none; border: none; padding: 0; overflow: hidden;"><img src="${matchedUser.photoData}" alt="${r.name || 'User'}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
+      if (matchedUser && (matchedUser.photoData || matchedUser.photodata)) {
+        avatarHtml = `<div class="review-avatar" style="background: none; border: none; padding: 0; overflow: hidden;"><img src="${matchedUser.photoData || matchedUser.photodata}" alt="${r.name || 'User'}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
       }
 
       return `

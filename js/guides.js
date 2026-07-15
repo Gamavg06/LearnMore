@@ -547,8 +547,11 @@ export async function saveUser(data) {
   }
 
 // ── FIX: limpiar campos que no van a la BD (password y photoFile son solo locales) ──
-   delete payload.password;
-   delete payload.photoFile;
+    delete payload.password;
+    delete payload.photoFile;
+    if (payload.photoData) {
+      payload.photodata = payload.photoData;
+    }
 
   const timestamp = new Date().toISOString();
 
