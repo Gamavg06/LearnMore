@@ -209,12 +209,6 @@ async function renderGuides() {
 }
 
 async function openGuide(id) {
-  if (!isUserLoggedIn) {
-    alert(translate("profile.loginPrompt"));
-    window.location.href = "login.html";
-    return;
-  }
-
   const guide = guides.find((item) => String(item.id) === String(id));
   if (!guide || !modalBody || !modal) return;
 
@@ -239,7 +233,13 @@ async function openGuide(id) {
     <div class="filters" style="display: flex; flex-wrap: wrap; gap: 5px; margin: 15px 0;">
       ${topicsTrans.map((topic) => `<span class="pill">${topic}</span>`).join("")}
     </div>
-    ${guide.fileUrl ? `<p style="margin-top: 20px;"><a class="btn-primary" href="${guide.fileUrl}" target="_blank" rel="noopener">${translate("nav.home") === "Inicio" ? "Abrir recurso" : "Open resource"}</a></p>` : ""}
+    ${guide.fileUrl ? `
+      <p style="margin-top: 20px;">
+        <a class="btn-primary" href="${isUserLoggedIn ? guide.fileUrl : 'login.html'}" ${isUserLoggedIn ? 'target="_blank" rel="noopener"' : `onclick="alert('${translate("profile.loginPrompt")}');"`}>
+          ${translate("nav.home") === "Inicio" ? "Abrir recurso" : "Open resource"}
+        </a>
+      </p>
+    ` : ""}
     
     <div class="guide-rating-summary" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid var(--border);">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
@@ -331,6 +331,13 @@ async function openGuide(id) {
   if (reviewForm) {
     reviewForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      if (!isUserLoggedIn) {
+        alert(translate("profile.loginPrompt"));
+        window.location.href = "login.html";
+        return;
+      }
+
       const commentInput = modalBody.querySelector("#guideReviewComment");
       const commentText = commentInput.value.trim();
       

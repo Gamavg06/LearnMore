@@ -529,6 +529,15 @@ Navegador: http://localhost:5500/index.html
 - **Admin/admin.js**:
   - Se actualizó la vista de reseñas en el panel administrativo (`renderReviews`) para integrar un pequeño contenedor circular de avatar que carga la imagen del usuario (o inicial de respaldo) al lado del nombre del remitente.
 
+### [2026-07-15] Acceso de Invitados a Detalles y Corrección de Recuperación de Contraseña (SGNIA#29)
+- **js/main.js**:
+  - Se modificó la función `openGuide` para permitir a los usuarios no logueados abrir el modal de detalles de la guía.
+  - Se configuró el botón "Open resource" para que, en caso de que el usuario no esté logueado, redirija a `login.html` tras alertar con el mensaje de inicio de sesión obligatorio.
+  - Se añadió la validación de inicio de sesión en el formulario de calificación de recursos para guiar al usuario no registrado al inicio de sesión antes de enviar su reseña.
+- **js/auth.js**:
+  - Se corrigió el flujo de recuperación de contraseña (`#resetPassword` click listener) para evaluar la respuesta de la función `sendPasswordResetEmail` y lanzar el error en caso de que la API de Supabase falle.
+
+
 
 
 

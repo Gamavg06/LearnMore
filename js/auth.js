@@ -138,10 +138,14 @@ document.querySelector("#resetPassword")?.addEventListener("click", async () => 
   try {
     if (supabaseReady) {
       const redirectTo = window.location.origin + window.location.pathname;
-      await sendPasswordResetEmail(auth, email, redirectTo);
+      const { error } = await sendPasswordResetEmail(auth, email, redirectTo);
+      if (error) throw error;
+      setStatus("Correo de recuperacion enviado. Revisa tu bandeja de entrada.");
+    } else {
+      setStatus("Modo local: cambia la contrasena registrandote de nuevo.");
     }
-    setStatus(supabaseReady ? "Correo de recuperacion enviado." : "Modo local: cambia la contrasena registrandote de nuevo.");
   } catch (error) {
+    console.error("Error en sendPasswordResetEmail:", error);
     setStatus(readableAuthError(error));
   }
 });
