@@ -88,7 +88,11 @@ form?.addEventListener("submit", async (event) => {
   
   editableFields.forEach(field => {
     if (data[field] !== undefined) {
-      payload[field] = data[field];
+      if (field === 'photoData' && !data[field] && currentUser?.photoData) {
+        payload[field] = currentUser.photoData;
+      } else {
+        payload[field] = data[field];
+      }
     }
   });
   
@@ -234,7 +238,13 @@ async function loadSupabaseProfile(user) {
   if (error || !data) {
     return { id: user.id, email: user.email, name: user.email, role: "user", ...localFields };
   }
-  return { id: user.id, email: user.email, ...data, ...localFields };
+  const merged = { id: user.id, email: user.email, ...data };
+  for (const key in localFields) {
+    if (localFields[key] && !merged[key]) {
+      merged[key] = localFields[key];
+    }
+  }
+  return merged;
 }
 
 function subscribeToUserMessages(email) {

@@ -551,6 +551,12 @@ Navegador: http://localhost:5500/index.html
   - Se implementó la función `translateWithGoogle` utilizando el endpoint gratuito de la API de Google Translate (`translate_a/single?client=gtx`).
   - Se actualizó `translateDynamic` y `translateToEnglish` para utilizar Google Translate como motor de traducción principal y ultra-veloz, manteniendo las instancias públicas de LibreTranslate como un robusto sistema de respaldo alternativo.
 
+### [2026-07-15] Salvaguarda y Prevención de Borrado de Fotos de Perfil (SGNIA#32)
+- **js/profile.js**:
+  - Se actualizó la carga del perfil (`loadSupabaseProfile`) para que los valores vacíos del caché local (`localStorage`) no sobrescriban la foto de perfil ni los campos válidos cargados desde Supabase.
+  - Se modificó el evento de guardado del perfil (`submit` form) para conservar la foto existente del usuario en caso de que el formulario se envíe sin subir un nuevo archivo de imagen, previniendo borrados accidentales de avatares.
+
+
 
 
 
