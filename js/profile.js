@@ -82,6 +82,7 @@ form?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(form));
   delete data.photoFile;
+  data.photoData = document.querySelector("#profilePhotoData")?.value || "";
   
   const editableFields = ['name', 'career', 'semester', 'studentId', 'phone', 'bio', 'photoData'];
   const payload = { ...currentUser };

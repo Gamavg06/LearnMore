@@ -566,6 +566,13 @@ Navegador: http://localhost:5500/index.html
 - **Admin/admin.js**:
   - Se actualizó la visualización de avatares en administración para admitir tanto `photoData` como `photodata`.
 
+### [2026-07-15] Vinculación de Campos de Foto al Formulario de Perfil (SGNIA#34)
+- **profile.html**:
+  - Se añadieron los atributos `form="profileForm"` a los inputs `#profilePhotoInput` y `#profilePhotoData` (que se encuentran fuera de la etiqueta física `<form>`), logrando que sean incluidos automáticamente por el serializador `FormData`.
+- **js/profile.js**:
+  - Se añadió la extracción manual de `photoData` en el listener de envío del formulario para asegurar su lectura correcta en todos los navegadores y arquitecturas.
+
+
 
 
 
