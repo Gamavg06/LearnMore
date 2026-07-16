@@ -572,6 +572,14 @@ Navegador: http://localhost:5500/index.html
 - **js/profile.js**:
   - Se añadió la extracción manual de `photoData` en el listener de envío del formulario para asegurar su lectura correcta en todos los navegadores y arquitecturas.
 
+### [2026-07-16] Corrección de Solapamiento en Cabecera de Login/Registro (SGNIA#35)
+- **css/auth.css**:
+  - Se movió el botón `#languageToggle` a la esquina superior derecha del contenedor principal `.auth-panel` (utilizando posicionamiento absoluto con `top: 1rem; right: 1rem;`) y se le añadió `position: relative` a la clase `.auth-panel` para establecer el contexto de coordenadas.
+- **login.html** / **register.html**:
+  - Se reubicó el botón `#languageToggle` fuera del contenedor `.auth-header` para que el logotipo de la marca permanezca centrado de forma óptima sin colisiones de texto.
+  - Se unificó el texto del logotipo `<span class="logo-text">LEARNMORE</span>` en la pantalla de registro para mantener concordancia visual.
+
+
 
 
 

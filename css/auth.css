@@ -6,6 +6,7 @@
 }
 
 .auth-panel {
+  position: relative;
   width: min(560px, 100%);
   display: grid;
   gap: 1rem;
@@ -44,9 +45,10 @@
   height: 72px;
 }
 
-.auth-header #languageToggle {
+.auth-panel #languageToggle {
   position: absolute;
-  right: 0;
+  top: 1rem;
+  right: 1rem;
 }
 
 .auth-panel h1 {
