@@ -579,6 +579,13 @@ Navegador: http://localhost:5500/index.html
   - Se reubicó el botón `#languageToggle` fuera del contenedor `.auth-header` para que el logotipo de la marca permanezca centrado de forma óptima sin colisiones de texto.
   - Se unificó el texto del logotipo `<span class="logo-text">LEARNMORE</span>` en la pantalla de registro para mantener concordancia visual.
 
+### [2026-07-16] Integración de Carrusel en Listado General de Guías Públicas (SGNIA#36)
+- **index.html**:
+  - Se modificó la sección de guías generales reemplazando la cuadrícula vertical `#guidesGrid` por una estructura de carrusel horizontal con botones de desplazamiento `#guidesPrev` y `#guidesNext`, manteniendo la compatibilidad de clases con el diseño VIP global.
+- **js/main.js**:
+  - Se añadieron e inicializaron escuchadores de eventos para los nuevos botones de navegación del carrusel general de guías públicas.
+
+
 
 
 

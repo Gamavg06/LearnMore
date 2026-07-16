@@ -529,3 +529,15 @@ if (prevBtn && nextBtn && track) {
     track.scrollLeft += 320;
   });
 }
+
+const guidesPrevBtn = document.querySelector("#guidesPrev");
+const guidesNextBtn = document.querySelector("#guidesNext");
+const guidesTrack = document.querySelector("#guidesGrid");
+if (guidesPrevBtn && guidesNextBtn && guidesTrack) {
+  guidesPrevBtn.addEventListener("click", () => {
+    guidesTrack.scrollLeft -= 320;
+  });
+  guidesNextBtn.addEventListener("click", () => {
+    guidesTrack.scrollLeft += 320;
+  });
+}

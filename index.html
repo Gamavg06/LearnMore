@@ -92,7 +92,11 @@
           <option value="all" data-i18n="filters.semester">Todos los semestres</option>
         </select>
       </div>
-      <div class="guides-grid" id="guidesGrid"></div>
+      <div class="carousel" style="margin-top: 1.5rem;">
+        <button class="carousel-btn prev-btn" id="guidesPrev" type="button" aria-label="Anterior">‹</button>
+        <div class="carousel-track" id="guidesGrid"></div>
+        <button class="carousel-btn next-btn" id="guidesNext" type="button" aria-label="Siguiente">›</button>
+      </div>
       <p class="empty-state" id="emptyGuides" data-i18n="guides.empty">No hay guias con esos filtros.</p>
     </section>
 
